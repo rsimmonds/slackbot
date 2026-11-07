@@ -205,6 +205,10 @@ export const candidateProfiles = pgTable(
     contact: bytea('contact'),
     dataRegion: dataRegionEnum('data_region').notNull().default('us'),
     lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
+    /** The candidate's ideal next mandate, from the Profile Interviewer, approved by them. */
+    idealMandate: jsonb('ideal_mandate').$type<Record<string, unknown>>(),
+    /** When the candidate acknowledged the plain-language AI notice (spec 9.7). */
+    aiNoticeAckAt: timestamp('ai_notice_ack_at', { withTimezone: true }),
     ...isSample(),
     ...timestamps(),
     ...softDelete(),
@@ -275,6 +279,10 @@ export const mandates = pgTable(
     /** What the employer pasted, and where it came from, for the Listing Parser. */
     rawSource: text('raw_source'),
     sourceUrl: text('source_url'),
+    /** Mandate Builder narrative: summary, what success looks like, risks, non-negotiables. */
+    document: jsonb('document').$type<Record<string, unknown>>(),
+    /** Comp benchmark computed from listings data (never model-invented). */
+    compBenchmark: jsonb('comp_benchmark').$type<Record<string, unknown>>(),
     ...isSample(),
     ...timestamps(),
     ...softDelete(),
@@ -480,8 +488,19 @@ export const interviewSessions = pgTable(
     companyId: uuid('company_id').references(() => companies.id),
     status: sessionStatusEnum('status').notNull().default('active'),
     questionIndex: integer('question_index').notNull().default(0),
-    /** Encrypted transcript (JSON lines) — always encrypted, for both kinds. */
+    maxQuestions: integer('max_questions').notNull().default(15),
+    /** Short display reference shown in the Session View corner, e.g. "MB-7Q2K". */
+    publicRef: text('public_ref')
+      .notNull()
+      .unique()
+      .default(sql`upper(substr(md5(gen_random_uuid()::text), 1, 8))`),
+    /** What the session produced, once complete. */
+    mandateId: uuid('mandate_id').references(() => mandates.id),
+    profileId: uuid('profile_id').references(() => candidateProfiles.id),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    /** Encrypted session state (transcript + working draft) — always encrypted, for both kinds. */
     transcript: bytea('transcript'),
+    /** Unencrypted working draft for MANDATE sessions only (no personal data). Profile drafts live in `transcript`. */
     draftOutput: jsonb('draft_output').$type<Record<string, unknown>>(),
     ...timestamps(),
   },
@@ -752,4 +771,59 @@ export const sourceItems = pgTable(
     ...timestamps(),
   },
   (t) => [index('source_items_status_idx').on(t.status, t.createdAt)],
+);
+
+// ---------------------------------------------------------------- Phase 2
+
+export const filePurposeEnum = pgEnum('file_purpose', ['resume', 'linkedin_pdf', 'media']);
+
+/**
+ * Encrypted uploads. The local provider stores the encrypted bytes here; the Supabase Storage
+ * provider stores only a reference. Owner-only by RLS; never served without a signed URL.
+ */
+export const files = pgTable(
+  'files',
+  {
+    id: id(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    purpose: filePurposeEnum('purpose').notNull(),
+    /** Encrypted original filename. */
+    filename: bytea('filename').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    sha256: text('sha256').notNull(),
+    provider: text('provider').notNull().default('local'),
+    /** Encrypted bytes (local provider) or null when stored externally. */
+    content: bytea('content'),
+    storageRef: text('storage_ref'),
+    ...timestamps(),
+    ...softDelete(),
+  },
+  (t) => [index('files_owner_idx').on(t.ownerId)],
+);
+
+export const dataRequestKindEnum = pgEnum('data_request_kind', ['export', 'delete']);
+export const dataRequestStatusEnum = pgEnum('data_request_status', [
+  'pending',
+  'completed',
+  'cancelled',
+]);
+
+/** Self-serve data rights (spec 9.5). Deletes complete within 30 days. */
+export const dataRequests = pgTable(
+  'data_requests',
+  {
+    id: id(),
+    userId: uuid('user_id').notNull(),
+    kind: dataRequestKindEnum('kind').notNull(),
+    status: dataRequestStatusEnum('status').notNull().default('pending'),
+    dueAt: timestamp('due_at', { withTimezone: true }).notNull(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    /** For exports: the files row holding the export archive. */
+    resultFileId: uuid('result_file_id'),
+    ...timestamps(),
+  },
+  (t) => [index('data_requests_status_idx').on(t.status, t.dueAt)],
 );

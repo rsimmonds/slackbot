@@ -50,6 +50,20 @@
       "when": 1794069002675,
       "tag": "0006_staff_bylines",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794070695735,
+      "tag": "0007_phase2_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794070709243,
+      "tag": "0008_phase2_rls",
+      "breakpoints": true
     }
   ]
 }
