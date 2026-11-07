@@ -8,7 +8,7 @@ const stepSource: Record<AgentStep, { file: string; section: string | null } | n
   'moves-tracker.classify': { file: 'moves-tracker', section: 'Classify' },
   'moves-tracker.draft': { file: 'moves-tracker', section: 'Draft' },
   'mandate-builder': null,
-  'profile-interviewer': null,
+  'profile-interviewer': { file: 'profile-interviewer', section: null },
   matcher: null,
   'editorial-assistant': null,
 };

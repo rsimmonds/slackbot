@@ -52,3 +52,17 @@ export {
   type Tip,
   type TipResult,
 } from './moves/tips';
+export type * from './interview/types';
+export {
+  profileInterview,
+  profileFields,
+  finalizeProfile,
+  type ProfileDraft,
+} from './interview/specs/profile';
+export {
+  scrubAnswer,
+  scrubDocument,
+  stripContact,
+  containsProtected,
+  type ScrubResult,
+} from './interview/specs/scrub';
