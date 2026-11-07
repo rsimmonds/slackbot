@@ -5,6 +5,7 @@ import { sendEmail } from '@cmobeat/email';
 import type { PaymentEvent } from '@cmobeat/payments';
 import { and, eq, inArray } from 'drizzle-orm';
 import { paymentReceiptEmail } from '@/emails/jobs';
+import { applyInvoicePaid } from '@/lib/searches/invoices';
 import { employerContacts } from './expiry';
 
 export type PaymentOutcome = 'paid' | 'duplicate' | 'cancelled' | 'ignored' | 'mismatch';
@@ -20,6 +21,8 @@ const money = (minor: number, currency: string) =>
 export async function applyPaymentEvent(event: PaymentEvent): Promise<PaymentOutcome> {
   const db = adminDb();
   if (event.kind === 'ignored') return 'ignored';
+  // Search and fractional fee invoices (Phase 3).
+  if (event.kind === 'invoice.paid') return applyInvoicePaid(event);
 
   if (event.kind === 'checkout.expired') {
     if (!event.listingId) return 'ignored';

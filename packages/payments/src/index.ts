@@ -6,6 +6,8 @@ export * from './types';
 export {
   FakePaymentsProvider,
   buildFakeEvent,
+  buildFakeInvoicePaidEvent,
+  FAKE_INVOICE_PATH,
   fakePaymentsSecret,
   planAmount,
   FAKE_CHECKOUT_PATH,
