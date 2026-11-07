@@ -48,7 +48,9 @@ export function heuristicParseListing(text: string): ParsedListing {
     if (compMax < 1000) compMin = compMax = null; // not money
   }
 
-  const reports = t.match(/[Rr]eport(?:s|ing)? (?:directly )?to (?:the )?([A-Z][\w &-]{1,40})/);
+  const reports = t.match(
+    /[Rr]eport(?:s|ing)? (?:directly )?to (?:the |our )?([A-Za-z][\w &-]{1,40})/,
+  );
   const team = lower.match(/team of (\d{1,4})|(\d{1,4})[- ]person team/);
   const priorities = t
     .split('\n')
