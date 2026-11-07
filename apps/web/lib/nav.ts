@@ -15,6 +15,8 @@ export const employerNav: NavLink[] = [
   { href: '/employer/mandates', label: 'Mandates' },
   { href: '/employer/jobs', label: 'Listings' },
   { href: '/employer/searches', label: 'Searches' },
+  { href: '/employer/data', label: 'Data' },
+  { href: '/employer/api', label: 'API' },
   { href: '/employer/billing', label: 'Billing' },
   { href: '/account', label: 'Account' },
 ];
