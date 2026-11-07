@@ -1,0 +1,245 @@
+/*
+ * Consumers: `@import 'tailwindcss'; @import '@cmobeat/ui/styles.css';`
+ * and `@source` the ui package so its class names are generated.
+ */
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import './tokens.css';
+
+@custom-variant dark (&:where([data-theme='retreat'], [data-theme='retreat'] *));
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-concrete: var(--concrete);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-synapse: var(--synapse);
+  --color-synapse-ink: var(--synapse-ink);
+  --color-synapse-glow: var(--synapse-glow);
+  --color-filament: var(--filament);
+  --color-filament-ink: var(--filament-ink);
+  --color-filament-glow: var(--filament-glow);
+  --color-good: var(--signal-good);
+  --color-good-ink: var(--signal-good-ink);
+  --color-critical: var(--signal-critical);
+  --color-critical-ink: var(--signal-critical-ink);
+  --color-on-filament: var(--on-filament);
+  --color-on-synapse: var(--on-synapse);
+  --color-glass: var(--glass);
+
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-control: var(--radius-control);
+  --radius-panel: var(--radius-panel);
+
+  --ease-calm: var(--ease-calm);
+}
+
+/* Type scale (px): 72, 56, 40, 28, 20, 16, 14, 12 */
+@theme {
+  --text-display: 72px;
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: 56px;
+  --text-h1--line-height: 1.05;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: 40px;
+  --text-h2--line-height: 1.1;
+  --text-h3: 28px;
+  --text-h3--line-height: 1.2;
+  --text-h4: 20px;
+  --text-h4--line-height: 1.35;
+  --text-body: 16px;
+  --text-body--line-height: 1.6;
+  --text-small: 14px;
+  --text-small--line-height: 1.5;
+  --text-micro: 12px;
+  --text-micro--line-height: 1.4;
+
+  --spacing: 4px; /* Tailwind multiplies; use even steps for the 8pt grid */
+  --container-content: 1280px;
+
+  --animate-breathe: breathe var(--breath) var(--ease-calm) infinite;
+  --animate-spin-slow: spin 24s linear infinite;
+  --animate-spin-slower: spin 40s linear infinite reverse;
+  --animate-spin-mid: spin 14s linear infinite;
+  --animate-drift: drift 28s ease-in-out infinite alternate;
+  --animate-signal: signal 1.8s var(--ease-calm) infinite;
+
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes drift {
+    from {
+      transform: translate3d(-4%, -3%, 0) scale(1);
+    }
+    to {
+      transform: translate3d(6%, 5%, 0) scale(1.08);
+    }
+  }
+  @keyframes signal {
+    from {
+      left: -8%;
+    }
+    to {
+      left: 100%;
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body,
+  [data-theme] {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    font-variant-numeric: tabular-nums;
+  }
+  *,
+  ::before,
+  ::after {
+    border-color: var(--line);
+  }
+  ::selection {
+    background: var(--synapse-glow);
+    color: var(--text);
+  }
+  :focus-visible {
+    outline: 1px solid var(--synapse);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--synapse-glow);
+  }
+}
+
+@layer components {
+  /* System voice: uppercase mono labels, 11–12px, 0.12em tracking */
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .hairline {
+    border-width: 1px;
+    border-color: var(--line);
+  }
+
+  /* Translucent mesh: glass + faint grid that surfaces on hover */
+  .mesh {
+    position: relative;
+    isolation: isolate;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-panel);
+  }
+  .mesh::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 16px 16px;
+    transition: opacity var(--dur-panel) var(--ease-calm);
+    opacity: 1;
+    pointer-events: none;
+  }
+  .mesh::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image:
+      linear-gradient(var(--grid-line-hover) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-hover) 1px, transparent 1px);
+    background-size: 16px 16px;
+    opacity: 0;
+    transition: opacity var(--dur-panel) var(--ease-calm);
+    pointer-events: none;
+  }
+  .mesh:hover::after {
+    opacity: 1;
+  }
+  /* Panels that hold focus for a long time (dialogs) keep the grid quiet. */
+  .mesh-quiet::after {
+    display: none;
+  }
+
+  /* Volumetric light: a slow synapse glow drifting from a corner */
+  .volumetric {
+    position: absolute;
+    inset: -20%;
+    pointer-events: none;
+    background: radial-gradient(40% 40% at 12% 8%, var(--synapse-glow) 0%, transparent 70%);
+    animation: var(--animate-drift);
+  }
+
+  /* Film grain, 3% */
+  .grain::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .grain::after {
+    display: none;
+  }
+  .mesh {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Reduced motion: replace motion with simple fades */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity !important;
+    scroll-behavior: auto !important;
+  }
+  .volumetric {
+    animation: none;
+  }
+}

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/cmobeat
+  APP_DATABASE_URL: postgres://cmobeat_app:cmobeat_app@localhost:5432/cmobeat
+  TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/cmobeat_test
+  TEST_APP_DATABASE_URL: postgres://cmobeat_app:cmobeat_app@localhost:5432/cmobeat_test
+  AUTH_MODE: dev
+  # CI-only throwaway values. Real secrets live in Vercel / GitHub environments.
+  DEV_AUTH_SECRET: ci-only-dev-auth-secret-not-for-production-use
+  ENCRYPTION_MASTER_KEY: Q0ktT05MWS1rZXktbm90LWZvci1wcm9kdWN0aW9uISE=
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cmobeat
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: psql postgres://postgres:postgres@localhost:5432/postgres -c 'create database cmobeat_test'
+      - name: Format
+        run: pnpm format:check
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Contrast (WCAG 2.2 AA)
+        run: pnpm contrast
+      - name: Unit and integration tests
+        run: pnpm test
+      - name: Migrate and seed
+        run: pnpm db:reset
+      - name: Build
+        run: pnpm build
+      - name: Storybook build
+        run: pnpm --filter @cmobeat/ui build-storybook
+      - name: Install Playwright browser
+        run: pnpm --filter @cmobeat/web exec playwright install --with-deps chromium
+      - name: End-to-end
+        run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: apps/web/playwright-report }
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Dependency audit
+        run: pnpm audit --audit-level high

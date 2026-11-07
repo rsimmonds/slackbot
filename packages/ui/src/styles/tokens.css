@@ -1,0 +1,88 @@
+/*
+ * Synthetic Calm — design tokens.
+ * Machine is blue (synapse). Human is amber (filament). Everything else is near-monochrome.
+ *
+ * Retreat (dark) is the default for app and private areas; Lab (light) for public editorial.
+ * Themes apply to any element with data-theme, so a page can scope a theme to a subtree.
+ *
+ * *-ink tokens are text-safe variants (WCAG 2.2 AA, 4.5:1 on bg, surface and surface-raised).
+ * The spec values are kept for graphics (rings, rules, fills), which need 3:1.
+ * Checked in CI by scripts/contrast.ts.
+ */
+
+:root,
+[data-theme='retreat'] {
+  color-scheme: dark;
+  --bg: #0a0b0d;
+  --surface: #111316;
+  --surface-raised: #181b1f;
+  --concrete: #23262a;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --text: #e9ebee;
+  --text-2: #9ba1a9;
+  --text-3: #80858b; /* spec #5E646C fails AA (3.3:1); lightened to 4.65:1 */
+  --synapse: #7fd6ff;
+  --synapse-ink: #7fd6ff;
+  --synapse-glow: rgba(127, 214, 255, 0.18);
+  --filament: #ffb45e;
+  --filament-ink: #ffb45e;
+  --filament-glow: rgba(255, 180, 94, 0.16);
+  --signal-good: #6ee7b7;
+  --signal-good-ink: #6ee7b7;
+  --signal-critical: #ff6b6b;
+  --signal-critical-ink: #ff6b6b;
+  --on-filament: #0a0b0d;
+  --on-synapse: #0a0b0d;
+  --glass: rgba(17, 19, 22, 0.72);
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --grid-line-hover: rgba(127, 214, 255, 0.06);
+  --grain-opacity: 0.03;
+}
+
+[data-theme='lab'] {
+  color-scheme: light;
+  --bg: #f4f5f6;
+  --surface: #ffffff;
+  --surface-raised: #fafafb;
+  --concrete: #e6e7e9;
+  --line: rgba(10, 12, 16, 0.08);
+  --line-strong: rgba(10, 12, 16, 0.16);
+  --text: #0b0d10;
+  --text-2: #5a6068;
+  --text-3: #6b6f74; /* spec #8C9198 fails AA (2.9:1); darkened to 4.63:1 */
+  --synapse: #0b84c6;
+  --synapse-ink: #0a75af; /* spec #0B84C6 is 3.75:1 as text */
+  --synapse-glow: rgba(11, 132, 198, 0.12);
+  --filament: #b86a12;
+  --filament-ink: #a35e10; /* spec #B86A12 is 3.77:1 as text */
+  --filament-glow: rgba(184, 106, 18, 0.12);
+  --signal-good: #0f8a5f;
+  --signal-good-ink: #0e7e57; /* spec #0F8A5F is 3.99:1 as text */
+  --signal-critical: #c2352f;
+  --signal-critical-ink: #c2352f;
+  --on-filament: #ffffff;
+  --on-synapse: #ffffff;
+  --glass: rgba(255, 255, 255, 0.72);
+  --grid-line: rgba(10, 12, 16, 0.04);
+  --grid-line-hover: rgba(11, 132, 198, 0.06);
+  --grain-opacity: 0.03;
+}
+
+:root {
+  /* Type */
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Motion */
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-control: 240ms;
+  --dur-panel: 480ms;
+  --dur-page: 900ms;
+  --breath: 4s;
+
+  /* Shape */
+  --radius-control: 4px;
+  --radius-panel: 8px;
+}

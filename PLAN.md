@@ -1,26 +1,32 @@
-# PLAN.md — {{BRAND_NAME}}
+# PLAN.md — CMO Beat
 
 An AI-native publication and hiring platform for CMOs. This plan covers the file tree, data model, agents and phase checklist, plus the decisions that need approval before application code starts.
 
-Status: **Awaiting approval.** No application code has been written.
+Status: **Approved 2026-11-07. Phase 0 in progress.**
 
 ---
 
-## 0. Decisions needed before Phase 0
+## 0. Decisions (approved 2026-11-07)
 
-| # | Question | My recommendation |
+| # | Decision | Outcome |
 | --- | --- | --- |
-| 1 | Brand name | Keep `{{BRAND_NAME}}` in one config constant (`packages/config/brand.ts`) so the rename is one line. Needed before public pages and email templates ship (Phase 1). |
-| 2 | Repository | This repo is named `slackbot`. Build here, or should I start in a new repo? |
-| 3 | Auth | **Clerk.** Magic links, Google, Microsoft, enforced MFA and org seats all come built in. Auth.js would need custom MFA. |
-| 4 | Database + storage | **Supabase** (Postgres + pgvector + Storage + Vault). One fewer subprocessor than Neon + R2, and Vault covers field-encryption keys. Drizzle stays the ORM, so we can move later. |
-| 5 | Jobs | **Inngest.** First-class Vercel integration, durable steps, cron. |
-| 6 | Field encryption | Envelope encryption: one data key per record, wrapped by a KMS key (Supabase Vault in prod, a local key in dev). Encrypted columns are `bytea`, never queried. |
-| 7 | Launch markets | Assume US + Canada, USD and CAD. Affects comp fields, tax on Stripe, CASL. Confirm. |
-| 8 | Fractional comp | Store fractional roles as a monthly retainer range (`comp_basis = monthly_retainer`), not annual. Confirm. |
+| 1 | Brand | **CMO Beat** (cmobeat.com was available on 2026-11-07, not yet registered). Lives in `packages/config/src/brand.ts`, so a rename is one file. Newsletter: *The Beat*. Interview series: *The Mandate*. Annual report: *State of the CMO Seat*. |
+| 2 | Repository | Move to a new dedicated repo. Work starts on `claude/stoic-pascal-3ik9j5` here and moves over with full history once the new repo exists. |
+| 3 | Auth | **Clerk**, but no Clerk account yet. Auth sits behind one interface with two modes: `clerk` (production) and `dev` (local sign-in as a sample user, refused in production). Switching is an env change. |
+| 4 | Database + storage | **Supabase** (Postgres + pgvector + Storage + Vault), Drizzle ORM. |
+| 5 | Jobs | **Inngest.** |
+| 6 | Field encryption | Envelope encryption (AES-256-GCM). Local master key in dev, Supabase Vault / KMS in production. |
+| 7 | Markets | **US, Canada and Europe** (EU + UK). Currencies USD, CAD, EUR, GBP. Every comp figure carries a currency. Users and profiles carry a `data_region` (us, eu) so EU data can move to an EU-hosted database later without a schema change. |
+| 8 | Fractional comp | Monthly retainer range (`comp_basis = monthly_retainer`). |
+
+### What Europe changes
+- **EU AI Act.** AI used to rank or filter job candidates is high-risk (Annex III). Human approval, logging, bias testing and candidate notices are already in the design; conformity, registration and documentation duties go to `LEGAL_REVIEW.md`.
+- **GDPR.** Lawful basis per processing purpose, Article 22 (human review of matches covers it, legal to confirm), DPIA before Phase 3, EU representative, cookie consent before any analytics.
+- **Data residency.** Phase 0 runs one region. `data_region` is recorded from day one; whether EU candidate data must stay in the EU is a legal question, flagged.
+- **Pay transparency.** The EU Pay Transparency Directive (transposition due June 2026) fits the comp-required rule well.
 
 ### Constraints of this build environment
-I can write, test and push the whole codebase here, but I can't create the Vercel, Supabase, Clerk, Stripe, Resend, Inngest, Voyage or Anthropic accounts. Every external service sits behind an interface with a local fake, so the app runs end to end in dev and CI without keys. You (or I, once keys exist as environment secrets) connect the real services for preview and production deploys.
+I can write, test and push the whole codebase here, but I can't create the Vercel, Supabase, Clerk, Stripe, Resend, Inngest, Voyage or Anthropic accounts. Every external service sits behind an interface with a local stand-in, so the app runs end to end in dev and CI without keys.
 
 ---
 
@@ -101,7 +107,7 @@ Postgres + pgvector, Drizzle migrations. Every table: `id uuid pk`, `created_at`
 | `embeddings` | owner_type, owner_id, kind, vector(1024), model | HNSW index |
 | `moves` | person_name, company_id, move_type, title, effective_date, sources jsonb (≥1, checked), confidence, status (draft, approved, rejected), approved_by | |
 | `articles` † | slug, type (story, interview, report), title, dek, body_mdx, media jsonb, chapters jsonb, author_id, editor_id, status, published_at | Publish requires editor_id |
-| `subscribers` | email, segments[], source, status (pending, active, unsubscribed), confirm_token, consent_at | |
+| `subscribers` | email, market, segments[], source, status (pending, active, unsubscribed), confirm_token, consent_at | |
 | `newsletter_issues` | subject, body_mdx, status, sent_at, provider_ref | |
 | `sponsorships` | sponsor_name, placement, creative jsonb, start_date, end_date, amount | |
 | `subscriptions`, `payments` | stripe customer/product/price/status refs, seats | |

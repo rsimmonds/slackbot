@@ -1,0 +1,29 @@
+{
+  "name": "cmobeat",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@cmobeat/web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --filter @cmobeat/web test:e2e",
+    "storybook": "pnpm --filter @cmobeat/ui storybook",
+    "contrast": "pnpm --filter @cmobeat/ui contrast",
+    "db:generate": "pnpm --filter @cmobeat/db generate",
+    "db:migrate": "pnpm --filter @cmobeat/db migrate",
+    "db:seed": "pnpm --filter @cmobeat/db seed",
+    "db:reset": "pnpm --filter @cmobeat/db reset",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "turbo": "2.11.10",
+    "typescript": "6.0.3"
+  }
+}

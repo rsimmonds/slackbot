@@ -1,0 +1,8 @@
+# Throwaway keys that are public on purpose: CI-only values and the fixed key used by
+# database tests. Real secrets live in Vercel and GitHub environments, never in the repo.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public CI and test fixtures"
+paths = ['''\.github/workflows/ci\.yml''', '''packages/db/test/env\.ts''']

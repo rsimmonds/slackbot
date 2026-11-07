@@ -31,3 +31,17 @@ node_modules
 
 # Optional REPL history
 .node_repl_history
+
+# App
+.env
+.env.local
+.env.*.local
+.next
+.turbo
+dist
+storybook-static
+playwright-report
+test-results
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
