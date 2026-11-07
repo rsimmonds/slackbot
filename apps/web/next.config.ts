@@ -40,7 +40,14 @@ const config: NextConfig = {
     '@cmobeat/ai',
     '@cmobeat/email',
   ],
-  serverExternalPackages: ['postgres'],
+  serverExternalPackages: ['postgres', '@react-pdf/renderer'],
+  // Fonts read from disk by the mandate PDF renderer.
+  outputFileTracingIncludes: {
+    '/api/mandates/[id]/pdf': [
+      './node_modules/@fontsource/geist/files/geist-latin-*-normal.woff',
+      './node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff',
+    ],
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

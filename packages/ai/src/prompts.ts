@@ -7,7 +7,7 @@ const stepSource: Record<AgentStep, { file: string; section: string | null } | n
   'listing-parser': { file: 'listing-parser', section: null },
   'moves-tracker.classify': { file: 'moves-tracker', section: 'Classify' },
   'moves-tracker.draft': { file: 'moves-tracker', section: 'Draft' },
-  'mandate-builder': null,
+  'mandate-builder': { file: 'mandate-builder', section: null },
   'profile-interviewer': null,
   matcher: null,
   'editorial-assistant': null,
@@ -30,12 +30,18 @@ export interface SystemPrompt {
   version: string;
 }
 
-const cache = new Map<AgentStep, SystemPrompt>();
+const cache = new Map<string, SystemPrompt>();
 
-export function systemPrompt(step: AgentStep): SystemPrompt {
-  const hit = cache.get(step);
+/**
+ * The system prompt for a step. `sectionOverride` picks a `## Section` of the step's prompt file
+ * (interviews use "Extract" and "Ask"); the preamble is always included.
+ */
+export function systemPrompt(step: AgentStep, sectionOverride?: string): SystemPrompt {
+  const key = `${step}#${sectionOverride ?? ''}`;
+  const hit = cache.get(key);
   if (hit) return hit;
-  const src = stepSource[step];
+  const base = stepSource[step];
+  const src = base && sectionOverride ? { ...base, section: sectionOverride } : base;
   if (!src) throw new Error(`No prompt file for ${step} yet`);
   const md = promptSources[src.file];
   if (!md) throw new Error(`Prompt file missing: agents/${src.file}/prompt.md`);
@@ -50,6 +56,6 @@ export function systemPrompt(step: AgentStep): SystemPrompt {
   const text = `${body}\n\n${promptSources.voice!.trim()}`;
   const version = `${src.file}@${createHash('sha256').update(text).digest('hex').slice(0, 12)}`;
   const prompt = { text, version };
-  cache.set(step, prompt);
+  cache.set(key, prompt);
   return prompt;
 }

@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./models": "./src/models.ts",
-    "./schemas": "./src/schemas/index.ts"
+    "./schemas": "./src/schemas/index.ts",
+    "./interview": "./src/interview/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

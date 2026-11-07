@@ -25,6 +25,8 @@ export interface SessionState<Draft> {
   remaining: string[];
   questionIndex: number;
   done: boolean;
+  /** Fields that already had their one follow-up. */
+  followedUp?: string[];
 }
 
 /** One thing the interview needs to learn. */
@@ -53,4 +55,6 @@ export interface InterviewSpec<Draft, Output = Draft> {
   finalize: (draft: Partial<Draft>) => Output;
   /** Opening line shown above the first question, e.g. "Reading your mandate." */
   intro: string;
+  /** Fields finalize() filled in itself, shown to the person as suggestions to edit. */
+  derivedFields?: (draft: Partial<Draft>) => string[];
 }
