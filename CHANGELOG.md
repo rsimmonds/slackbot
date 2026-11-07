@@ -1,5 +1,45 @@
 # Changelog
 
+## Phase 4: Scale (2026-11-07)
+
+### Built
+- **Employer subscription** ($1,500/mo): unlimited job posts (plan `subscription`; the database refuses it without an active subscription), 5 seats included, Billing Portal (test portal offline), cancel at period end.
+- **Team and seats** (`/employer/team`):
+  - Invitations are emailed once, stored hashed, and expire in 14 days.
+  - Accepted only by the invited email, through one database function.
+  - Members can be removed; the last owner can't (trigger).
+- **Candidate concierge** ($99/mo): human coaching requests with encrypted topics; talent partners take, schedule and complete them at `/console/coaching`.
+- **Career digest**: weekly email of matching roles and relevant moves, for candidates who opt in.
+- **Data API** (`/api/v1`, read-only):
+  - Endpoints: moves, listings, comp aggregates (cells under 5 suppressed) and companies.
+  - Keys are shown once, stored hashed with a pepper, scoped and revocable.
+  - Rate limits of 60/min and 10,000/day, with usage per day.
+  - OpenAPI 3.1 spec and `/developers` docs.
+  - Data is served as an anonymous visitor would see it, so private tables are unreachable by design, and tests prove it.
+- **Intelligence exports** (`/employer/data`): moves and comp as CSV or JSON, streamed, with a provenance line. Spreadsheet formula injection is neutralised.
+- **State of the CMO Seat report**: a PDF generated from data, including a method and limitations page.
+- **Report gate** (`/data/report`): the newsletter opt-in is unticked by default. Leads are recorded separately from subscribers; ticking the box starts the usual double opt-in. Signed, short-lived download links. Editors see leads and export them at `/console/leads`.
+- **Public data pages** by industry and market: "Cite this" blocks, `Dataset` JSON-LD, public CSVs, in the sitemap.
+
+### Fixed during integration
+- **Migrations:** two branches both added a migration 0016. The second is now 0017, and the snapshot chain is repaired; drizzle-kit reports no drift.
+- **Mandate PDF:** the footer and page numbers were silently dropped. They render now, and a test checks it.
+- **Staff header:** it used the menu button below 1280px once the console reached nine links.
+- **Test isolation:** billing browser tests ran in parallel against the same employer subscription. They now run in sequence and clean up after themselves.
+
+### Results
+- 400 unit, integration and eval tests; 141 Playwright tests on desktop and mobile, passing twice in a row.
+- Lighthouse on nine public pages: performance 94–97, accessibility 98–100, best practices 96, SEO 100.
+- Phase 4 acceptance: a subscriber pulls a moves dataset through the API, and the annual report captures leads into the subscriber list.
+
+## Status of the whole build (definition of done)
+1. **Every flow passes in Playwright on desktop and mobile.** Done. Each phase's "done when" criteria have an acceptance test; flows that change shared state run once, on desktop.
+2. **Lighthouse 90+ on public pages.** Done (see above).
+3. **Agent eval suites pass their thresholds in CI.** Done offline: listing parser, Moves Tracker (classify and draft), Mandate Builder, Profile Interviewer and Matcher, each with 22 or more cases. Scoring against the live model needs an Anthropic key (`EVALS_LIVE=1`).
+4. **README, PLAN, CHANGELOG, .env.example and LEGAL_REVIEW are complete and current.** Done.
+
+Still requires accounts or keys: Clerk, Supabase (database and storage), Vercel, Anthropic, Voyage AI, Stripe, Resend, Inngest, Sentry and PostHog. Every one sits behind an interface with a working offline stand-in. Switching each over is configuration, not code.
+
 ## Phase 3: Matching (2026-11-07)
 
 ### Built

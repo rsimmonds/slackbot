@@ -32,6 +32,10 @@ Status key: **Open** (not yet reviewed), **In review**, **Decided** (with date a
 | P6 | **Cookie consent** standard (EU ePrivacy, UK PECR, Quebec Law 25). | Analytics, PostHog | Open |
 | P7 | **Privacy policy, terms, subprocessor list, records of processing.** Drafts to be produced before Phase 1 launch. | Legal pages | Open |
 | P16 | **Voyage AI as subprocessor** for embeddings. It receives blind text only (outcomes and mandate scope, no names or contact details). | Matching | Open |
+| P17 | **Moves data via the API.** Subscribers receive names of people in public moves, including EU individuals. Related to E3. | `/api/v1/moves` | Open |
+| P18 | **Report leads without marketing consent.** A report download records the email, company and role even without newsletter opt-in; one transactional email delivers the link. Confirm lawful basis, CASL treatment and retention. | `/data/report`, `/console/leads` | Open |
+| P19 | **Log and request retention.** `api_requests` (key, path, status, row count) and coaching topics have no retention period yet. Set one. | Data API, concierge | Open |
+| P20 | **Career digest consent.** Opt-in is stored as a consent record; confirm CASL wording. | `/me` | Open |
 | P9 | **Anthropic as subprocessor** for job descriptions and public news text sent to the Listing Parser and Moves Tracker. Add to the subprocessor list. | AI agents | Open |
 | P10 | **Rate-limit IP hashing.** IPs are salted-hashed and kept in memory only, never stored. Confirm no notice is needed. | Newsletter signup | Open |
 | P11 | **Deletion and the audit log.** The audit log is append-only by design. After an account is deleted, its entries keep a user ID that no longer resolves to anyone. Confirm this counts as anonymized under GDPR Art. 17. | Data rights, audit log | Open |
@@ -64,4 +68,7 @@ Status key: **Open** (not yet reviewed), **In review**, **Decided** (with date a
 | C5 | **Newsletter consent wording.** Review the exact text stored with each signup (`apps/web/lib/newsletter/service.ts`). | Newsletter | Open |
 | C7 | **Draft legal pages.** Privacy, terms, cookies, subprocessors and the AI notice are drafts. Each "For counsel:" marker needs a decision: legal entity, lawful bases, transfers, retention, liability, governing law, review contact. Subprocessor regions are assumed. | `/legal/*` | Open |
 | C8 | **Sponsored content disclosure.** Confirm the "Sponsored" label and placement meet FTC, ASA and Competition Bureau rules. | Sponsorships | Open |
+| C9 | **Subscription auto-renewal.** Employer ($1,500/mo) and concierge ($99/mo) plans renew monthly; cancellation is at period end. Confirm disclosures meet California's auto-renewal law and equivalents. Failed payments stay active during retries. | Subscriptions | Open |
+| C10 | **Data licence.** Draft licence wording appears in API responses, `/developers`, CSV exports and public dataset pages. Decide terms of reuse, attribution and redistribution. | Data API, exports, `/data/*` | Open |
+| C11 | **Seat invitations.** Admins can invite any email address; invitations expire after 14 days. Confirm wording and anti-abuse expectations. | `/employer/team` | Open |
 | C6 | **Job board vs agency.** Confirm that listing paid job posts (as distinct from paid search, H4) needs no licence in any launch market. | Job board | Open |

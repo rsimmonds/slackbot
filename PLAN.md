@@ -2,7 +2,7 @@
 
 An AI-native publication and hiring platform for CMOs. This plan covers the file tree, data model, agents and phase checklist, plus the decisions that need approval before application code starts.
 
-Status: **Phases 0–3 complete (2026-11-07).**
+Status: **All phases (0–4) built and tested offline (2026-11-07). Going live needs the accounts listed in README.**
 
 ---
 
@@ -182,10 +182,10 @@ Each phase ends with a deployable app, a `CHANGELOG.md` entry, and a checkpoint 
 - **Done when:** a mandate produces a shortlist, a talent partner approves two, a candidate consents to one reveal, the employer sees only that one, and every step is in `audit_log`.
 
 ### Phase 4: Scale
-- [ ] Employer subscriptions with seats and unlimited posts
-- [ ] Intelligence exports + read-only API with keys
-- [ ] Gated annual report downloads feeding the subscriber list
-- [ ] Candidate concierge tier
+- [x] Employer subscriptions with seats and unlimited posts
+- [x] Intelligence exports + read-only API with keys
+- [x] Gated annual report downloads feeding the subscriber list
+- [x] Candidate concierge tier
 - **Done when:** a subscriber pulls a moves dataset through the API; the report captures leads.
 
 ---
