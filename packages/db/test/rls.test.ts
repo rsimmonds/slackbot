@@ -131,6 +131,7 @@ describe('employer_match_view', () => {
     expect(row!.candidate_name).toBeNull();
     expect(row!.candidate_email).toBeNull();
     expect(row!.headline).toBeNull();
+    expect(row!.years_experience).toBeNull(); // age proxy: never shown to employers
     expect(row!.rationale).toEqual({ summary: 'A fits X' });
   });
 

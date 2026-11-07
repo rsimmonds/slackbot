@@ -1,5 +1,55 @@
 # Changelog
 
+## Phase 3: Matching (2026-11-07)
+
+### Built
+- **Blind matching** (`proposeMatchesForMandate`):
+  - **Stage 1:** hard filters. Visible profiles only, compatible level, work type, market (remote counts), comp overlap within the same currency and pay basis, blocklist, and not already matched.
+  - **Stage 2:** pgvector shortlist, then the Matcher ranks up to 25 with a fit range and reasons for and against.
+  - Writes **proposals only**. Idempotent and audit-logged.
+- **Blind profiles:** the Matcher never sees names, contact details, employer names, years of experience, graduation years, or any protected attribute. Each run uses opaque references.
+- **Matcher agent** (Claude Opus 5.5): structured output. Unknown references are dropped. Nightly runs can use the Message Batches API. Offline mode is a deterministic ranker that counts quantified evidence only.
+- **Embeddings:** Voyage AI adapter, plus a deterministic local embedder used offline. Refreshed when a mandate is confirmed or a profile becomes visible, and nightly.
+- **Fairness:**
+  - **Invariance:** 360 of 360 paired variants (differing only in protected attributes) produce identical blind inputs and scores.
+  - **Selection rates:** the four-fifths impact-ratio check passes at a minimum of 1.00 across 2,112 variants.
+  - Weekly report written to `fairness_reports`; staff page `/console/fairness`.
+  - Tested against a deliberately biased scorer: it fails on raw text and passes once blinded.
+- **Staff review** (`/console/matches`): run matching, then the Match Dossier (mandate against anonymized profile). Approve (amber, in your own name), edit the rationale, or reject. Full audit trail per match.
+- **Employer shortlist:** approved matches only, anonymized, with the Human Review seal. Request an introduction. Identity (name, email, headline) appears only after the candidate consents.
+- **Candidate matches** (`/me/matches`): the role, scope, comp, industry and stage are shown, but **no company name until reveal**. Interested, not for me, or ask a question (note encrypted). Reveal goes through the Consent Gate; consent can be withdrawn and identity hides immediately.
+- **Messaging** after a consented reveal: encrypted bodies, and notification emails with no content.
+- **Paid searches:**
+  - The employer requests an AI-assisted search (12% of first-year cash comp) or a fractional match (15% of the monthly retainer), accepting terms that are copied onto the search.
+  - Talent partners run the search: scoping → sourcing (runs matching) → shortlist → interviewing → placed.
+  - A placement must be a consented, revealed match.
+- **Invoicing:** Stripe Invoicing adapter, plus a test invoice provider. Invoices are idempotent, the webhook handles `invoice.paid`, and fractional placements are invoiced monthly. Employer billing page.
+- **Database:**
+  - Migrations 0011–0013.
+  - Only talent partners can change a match's status (trigger). Candidates answer only their own matches.
+  - Accepting a reveal with live consent marks the match revealed (trigger).
+  - `candidate_match_view` withholds the company until reveal.
+  - Employers request searches only for their own confirmed mandates.
+  - Fairness reports are staff-only.
+  - Employers no longer see years of experience (age proxy).
+
+### Fixed during integration
+- **Match scores:** stored 0–1 (database check) and shown ×100. The Matcher works in 0–100 and converts on insert; a round-trip test covers it.
+- **Audit naming:** `match.proposed` is labelled in the dossier trail.
+- **Test isolation:** tests from different workstreams no longer collide on shared rows (payment counts, one match per mandate and profile).
+- **Parallel test resets:** creating the shared app database role is now race-safe.
+
+### Results
+- 356 unit, integration and eval tests; 124 Playwright tests on desktop and mobile with axe; 72/72 contrast pairs; Matcher evals 25/25.
+- The Phase 3 acceptance test passes: a mandate produces a shortlist, a talent partner approves two, one candidate consents and one declines, the employer sees only the consented identity, and every step is in the audit log.
+- A real-pipeline browser test runs matching and approves a proposal.
+
+### Stubbed until accounts exist
+- Voyage AI (local embedder), the Claude Matcher (offline ranker), the Message Batches path (tested with a mock), Stripe Invoicing (test invoices), and Inngest events (nightly jobs catch up).
+
+### Known issue
+- One web test failed twice under full parallel runs and couldn't be reproduced in 14 later runs. A role-creation race in parallel database resets was found and fixed and is the likely cause. Watch CI.
+
 ## Phase 2: AI layer (2026-11-07)
 
 ### Built

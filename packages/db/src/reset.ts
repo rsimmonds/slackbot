@@ -30,20 +30,40 @@ export async function resetDatabase(opts: { seed?: () => Promise<unknown> } = {}
   if (opts.seed) await opts.seed();
 }
 
-/** Create (or update) the LOGIN role named in APP_DATABASE_URL and grant it app_user. */
+/**
+ * Create (or update) the LOGIN role named in APP_DATABASE_URL and grant it app_user.
+ * Roles are cluster-wide, and several test suites reset their own databases in parallel, so
+ * this tolerates a concurrent create and retries on "tuple concurrently updated".
+ */
 async function ensureAppLoginRole(sql: postgres.Sql, appUrl: string): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await ensureAppLoginRoleOnce(sql, appUrl);
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      const retryable =
+        code === 'XX000' || code === '42710' || code === '23505' || code === '40001';
+      if (!retryable || attempt >= 6) throw e;
+      await new Promise((r) => setTimeout(r, 50 * attempt + Math.random() * 100));
+    }
+  }
+}
+
+async function ensureAppLoginRoleOnce(sql: postgres.Sql, appUrl: string): Promise<void> {
   const u = new URL(appUrl);
   const name = decodeURIComponent(u.username);
   const password = decodeURIComponent(u.password);
   if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`Unsafe role name: ${name}`);
   await sql.unsafe(`
     DO $$ BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_user') THEN
+      BEGIN
         CREATE ROLE app_user NOLOGIN NOINHERIT NOBYPASSRLS;
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${name}') THEN
+      EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+      END;
+      BEGIN
         CREATE ROLE ${name} LOGIN INHERIT NOBYPASSRLS;
-      END IF;
+      EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+      END;
     END $$;
   `);
   await sql.unsafe(

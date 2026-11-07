@@ -8,7 +8,7 @@ import {
   profileBlocklist,
 } from '@cmobeat/db';
 import { latestEmailTo } from '@cmobeat/email';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { GET as dossierRoute } from '@/app/api/matches/[id]/route';
 import { GET as threadRoute, POST as messageRoute } from '@/app/api/matches/[id]/messages/route';
 import { POST as responseRoute } from '@/app/api/matches/[id]/response/route';
@@ -121,13 +121,21 @@ describe('staff review', () => {
     expect((await review(matchIds[3]!, { action: 'approve' })).status).toBe(403);
   });
 
-  it('running matching needs a confirmed mandate, and reports an unavailable Matcher kindly', async () => {
+  it('running matching needs a confirmed mandate, and only ever proposes', async () => {
     signInAs('talent');
     const draft = await createConfirmedMandate(companyId, false);
     expect((await runRoute(post('/api/matches/run', { mandateId: draft.id }))).status).toBe(409);
     const res = await runRoute(post('/api/matches/run', { mandateId }));
-    // In this workstream the pipeline is a stub; either it runs or it fails without side effects.
-    expect([200, 503]).toContain(res.status);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { proposed: string[] } };
+    // Whatever the Matcher found, nothing is approved without a person.
+    if (body.data.proposed.length) {
+      const rows = await adminDb()
+        .select({ status: matches.status })
+        .from(matches)
+        .where(inArray(matches.id, body.data.proposed));
+      expect(rows.every((r) => r.status === 'proposed')).toBe(true);
+    }
     signInAs('employer');
     expect((await runRoute(post('/api/matches/run', { mandateId }))).status).toBe(403);
   });

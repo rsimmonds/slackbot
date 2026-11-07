@@ -13,6 +13,7 @@ export const metadata = { title: 'Match dossier' };
 
 const actionLabel: Record<string, string> = {
   'match.propose': 'Proposed by the Matcher',
+  'match.proposed': 'Proposed by the Matcher',
   'match.rationale_edit': 'Rationale edited',
   'match.approve': 'Approved',
   'match.reject': 'Rejected',

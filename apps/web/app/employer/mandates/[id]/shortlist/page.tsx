@@ -71,10 +71,6 @@ export default async function ShortlistPage({ params }: { params: Promise<{ id: 
                   heading: it.candidate ? it.candidate.name : `Candidate ${i + 1} · anonymised`,
                   facts: [
                     { label: 'Level', value: it.level ? (levelLabel[it.level] ?? it.level) : '—' },
-                    {
-                      label: 'Years',
-                      value: it.yearsExperience ? String(it.yearsExperience) : '—',
-                    },
                     ...(it.candidate
                       ? [
                           { label: 'Email', value: it.candidate.email },

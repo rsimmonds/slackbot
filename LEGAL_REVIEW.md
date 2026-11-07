@@ -13,6 +13,11 @@ Status key: **Open** (not yet reviewed), **In review**, **Decided** (with date a
 | H3 | **GDPR Article 22.** Confirm that mandatory human approval of every match takes matching outside "solely automated" decisions. Wording of the candidate notice. | Match review, candidate notice | Open |
 | H4 | **Recruitment agency status.** Do the 12% search and 15% fractional fees make us an employment agency needing a licence in any launch jurisdiction (e.g. some US states, Ontario EPA, UK Conduct of Employment Agencies Regulations)? | Paid search, fractional match | Open |
 | H5 | **Protected attributes.** Confirm the list stripped before matching for each market (US federal + state, Canada, EU, UK Equality Act). | PII stripper | Open |
+| H7 | **Bias audit on synthetic data.** No demographic data is collected, so the fairness report uses synthetic profiles that differ only in protected attributes (invariance), plus a four-fifths impact-ratio test on a synthetic population. Confirm this satisfies NYC LL144 (test data permitted when historical data is unavailable) and EU AI Act Art. 10. Names used as ethnicity proxies in the test data need review. | `/console/fairness`, weekly report | Open |
+| H8 | **Years of experience as an age proxy.** The Matcher never receives it, and employers no longer see it (migration 0013). Talent partners still see it in the dossier. Confirm. | Matching, shortlist | Open |
+| H9 | **Comp floor in hard filters.** A candidate's private comp floor (encrypted) is decrypted only inside the matching job to exclude roles that pay below it. Confirm lawful basis and notice. | Matching | Open |
+| H10 | **Consent withdrawal after reveal.** Withdrawing hides identity and closes messaging immediately, but cannot undo what the employer already saw. Confirm the Consent Gate wording meets GDPR Art. 7(3). | Reveal flow | Open |
+| H11 | **Search fees and invoices.** 12% of first-year cash comp and 15% of monthly retainer, 30-day terms, "accepted on behalf of the company" wording (signatory authority?), and minimum invoice content per market (tax IDs, addresses). Related: H4, C3. | Paid searches | Open |
 | H6 | **Illinois AI Video Interview Act / Colorado AI Act / similar.** Any obligations if interviews include audio or video later. | Session View (future) | Open |
 
 ## Privacy and data
@@ -26,6 +31,7 @@ Status key: **Open** (not yet reviewed), **In review**, **Decided** (with date a
 | P5 | **Retention.** Anonymize inactive candidate profiles after 24 months (spec). Confirm against each market and against audit-log retention needs for H1/H2. | Retention job | Open |
 | P6 | **Cookie consent** standard (EU ePrivacy, UK PECR, Quebec Law 25). | Analytics, PostHog | Open |
 | P7 | **Privacy policy, terms, subprocessor list, records of processing.** Drafts to be produced before Phase 1 launch. | Legal pages | Open |
+| P16 | **Voyage AI as subprocessor** for embeddings. It receives blind text only (outcomes and mandate scope, no names or contact details). | Matching | Open |
 | P9 | **Anthropic as subprocessor** for job descriptions and public news text sent to the Listing Parser and Moves Tracker. Add to the subprocessor list. | AI agents | Open |
 | P10 | **Rate-limit IP hashing.** IPs are salted-hashed and kept in memory only, never stored. Confirm no notice is needed. | Newsletter signup | Open |
 | P11 | **Deletion and the audit log.** The audit log is append-only by design. After an account is deleted, its entries keep a user ID that no longer resolves to anyone. Confirm this counts as anonymized under GDPR Art. 17. | Data rights, audit log | Open |

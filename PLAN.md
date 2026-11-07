@@ -2,7 +2,7 @@
 
 An AI-native publication and hiring platform for CMOs. This plan covers the file tree, data model, agents and phase checklist, plus the decisions that need approval before application code starts.
 
-Status: **Phases 0–2 complete (2026-11-07).**
+Status: **Phases 0–3 complete (2026-11-07).**
 
 ---
 
@@ -175,10 +175,10 @@ Each phase ends with a deployable app, a `CHANGELOG.md` entry, and a checkpoint 
 - **Done when:** employer completes and exports a mandate; candidate completes a profile, sets hidden, and tests show no other role can see it.
 
 ### Phase 3: Matching
-- [ ] Blind two-stage matching with rationale
-- [ ] Staff match review, Match Dossier, Consent Gate, reveal flow, messaging
-- [ ] Paid search + fractional match invoicing
-- [ ] Fairness report + all agent evals in CI
+- [x] Blind two-stage matching with rationale
+- [x] Staff match review, Match Dossier, Consent Gate, reveal flow, messaging
+- [x] Paid search + fractional match invoicing
+- [x] Fairness report + all agent evals in CI
 - **Done when:** a mandate produces a shortlist, a talent partner approves two, a candidate consents to one reveal, the employer sees only that one, and every step is in `audit_log`.
 
 ### Phase 4: Scale
