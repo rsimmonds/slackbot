@@ -1,4 +1,6 @@
+import { mandates } from '@cmobeat/db';
 import { Button, DataCard, MeshPanel, Status } from '@cmobeat/ui';
+import { and, eq, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
@@ -11,9 +13,24 @@ export const metadata = { title: 'Employer' };
 export default async function EmployerHome() {
   const viewer = await requireArea('employer');
   const company = await companyForEmployer(viewer.id);
-  const rows = await asViewer(viewer, async (tx) => {
+  const { rows, mandateCount, confirmedCount } = await asViewer(viewer, async (tx) => {
     const c = await employerCompany(tx, viewer.id);
-    return c ? employerListings(tx, c.id) : [];
+    if (!c) return { rows: [], mandateCount: 0, confirmedCount: 0 };
+    const built = await tx
+      .select({ confirmedAt: mandates.confirmedAt })
+      .from(mandates)
+      .where(
+        and(
+          eq(mandates.companyId, c.id),
+          eq(mandates.source, 'builder'),
+          isNull(mandates.deletedAt),
+        ),
+      );
+    return {
+      rows: await employerListings(tx, c.id),
+      mandateCount: built.length,
+      confirmedCount: built.filter((m) => m.confirmedAt).length,
+    };
   });
   const live = rows.filter((r) => r.status === 'live').length;
   const inReview = rows.filter((r) => r.status === 'pending_review').length;
@@ -26,17 +43,26 @@ export default async function EmployerHome() {
       <MeshPanel
         className="col-span-12 lg:col-span-8"
         eyebrow="Mandate Builder"
-        title="No mandates yet"
-        actions={<Status>Phase 2</Status>}
+        title={
+          mandateCount
+            ? `${mandateCount} mandate${mandateCount === 1 ? '' : 's'} · ${confirmedCount} confirmed`
+            : 'No mandates yet'
+        }
+        actions={mandateCount ? <Status tone="human">Your decisions</Status> : undefined}
       >
         <EmptyState>
           A 15-question session with your CEO or board member produces a mandate, a 90-day
           scorecard, a comp benchmark and an interview plan.
         </EmptyState>
-        <div className="mt-6 flex gap-3">
-          <Button variant="machine" disabled>
-            Start a session
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button asChild variant="human">
+            <Link href="/employer/mandates/new">Start a session</Link>
           </Button>
+          {mandateCount ? (
+            <Button asChild variant="ghost">
+              <Link href="/employer/mandates">View mandates</Link>
+            </Button>
+          ) : null}
           <Button asChild variant="secondary">
             <Link href="/employer/jobs/new">Post a job</Link>
           </Button>

@@ -13,6 +13,8 @@ export interface RunAgentOptions<S extends z.ZodType> {
   /** The user turn. Untrusted input must already be wrapped in tags by the caller. */
   user: string;
   schema: S;
+  /** A `## Section` of the step's prompt file to use (preamble always included). */
+  promptSection?: string;
   effort?: 'low' | 'medium' | 'high';
   maxTokens?: number;
   /** Who triggered the run (null for scheduled jobs). Not stored with the input. */
@@ -37,7 +39,7 @@ export async function runAgent<S extends z.ZodType>(
   const db = opts.db ?? adminDb();
   const provider = opts.provider ?? defaultProvider();
   const model = agentModels[opts.step];
-  const prompt = systemPrompt(opts.step);
+  const prompt = systemPrompt(opts.step, opts.promptSection);
   const inputRef = sha(opts.user);
   let lastReason = 'unknown';
   let lastRunId = '';

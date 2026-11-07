@@ -3,6 +3,7 @@
  * EVALS_LIVE=1 pnpm --filter @cmobeat/ai evals  live: calls Claude, records outputs, prints cost
  */
 import { AnthropicProvider } from '../provider';
+import { interviewSuites, runInterviewSuite } from '../interview/evals';
 import { runSuite, suites } from './runner';
 
 const pct = (r: number | null) => (r === null ? '   n/a' : `${(r * 100).toFixed(0).padStart(5)}%`);
@@ -24,6 +25,14 @@ async function main() {
     for (const f of r.failures) console.log(`  ✗ [${f.mode}] ${f.id}: ${f.problems.join('; ')}`);
     if (!live && r.model.scored === 0)
       console.log('  (no recorded model outputs yet: run with EVALS_LIVE=1 and a key)');
+  }
+  for (const def of interviewSuites) {
+    const r = runInterviewSuite(def);
+    ok &&= r.ok;
+    console.log(
+      `${r.suite.padEnd(24)} ${String(r.total).padStart(3)} cases | model (live scoring needs a key)      | offline fallback ${r.passed}/${r.total} ${pct(r.rate)} min ${r.threshold * 100}%`,
+    );
+    for (const f of r.failures) console.log(`  ✗ [fallback] ${f.id}: ${f.problems.join('; ')}`);
   }
   if (live) console.log(`Cost: $${(cost / 1e6).toFixed(4)}`);
   if (!ok) process.exitCode = 1;

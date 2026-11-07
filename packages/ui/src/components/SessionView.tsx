@@ -21,6 +21,13 @@ export interface SessionViewProps {
   /** Optional system line under the question, e.g. "Reading your mandate. 14 signals found." */
   systemNote?: ReactNode;
   busy?: boolean;
+  /** A problem to show under the answer field, e.g. a network error. */
+  error?: ReactNode;
+  /**
+   * Remounts the question animation when it changes. Defaults to the question number, so a
+   * question streaming in token by token is not re-animated on every token.
+   */
+  questionKey?: string | number;
   onExit?: () => void;
   placeholder?: string;
   className?: string;
@@ -42,11 +49,14 @@ export function SessionView({
   onSubmit,
   systemNote,
   busy,
+  error,
+  questionKey,
   onExit,
   placeholder = 'Take your time.',
   className,
 }: SessionViewProps) {
   const fieldId = useId();
+  const errorId = useId();
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     if (!busy && value.trim()) onSubmit(value.trim());
@@ -75,7 +85,7 @@ export function SessionView({
             {question.join(' ')}
           </label>
           <Resolve
-            key={`${index}-${question[0] ?? ''}`}
+            key={questionKey ?? index}
             as="h1"
             lines={question}
             className="text-center font-serif text-h2 text-text md:text-h1"
@@ -91,12 +101,19 @@ export function SessionView({
             rows={4}
             disabled={busy}
             placeholder={placeholder}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
             className={cn(
               'w-full resize-none border-0 border-b border-line bg-transparent px-0 py-3 text-h4 text-text',
               'placeholder:text-text-3 focus:border-synapse focus:shadow-none focus:outline-none',
               'transition-[border-color] duration-[240ms] ease-calm',
             )}
           />
+          {error ? (
+            <p id={errorId} role="alert" className="text-small text-critical-ink">
+              {error}
+            </p>
+          ) : null}
           <div className="flex items-center justify-between gap-4">
             <span className="label-mono">⌘ Enter to continue</span>
             <Button type="submit" variant="primary" disabled={busy || !value.trim()}>

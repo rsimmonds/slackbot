@@ -12,6 +12,7 @@ export const publicNav: NavLink[] = [
 
 export const employerNav: NavLink[] = [
   { href: '/employer', label: 'Overview' },
+  { href: '/employer/mandates', label: 'Mandates' },
   { href: '/employer/jobs', label: 'Listings' },
   { href: '/employer/jobs/new', label: 'Post a job' },
   { href: '/account', label: 'Account' },
