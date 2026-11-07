@@ -1,0 +1,1 @@
+ALTER TYPE "public"."file_purpose" ADD VALUE 'data_export';

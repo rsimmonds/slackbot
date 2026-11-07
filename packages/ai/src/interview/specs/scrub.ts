@@ -115,12 +115,19 @@ export function scrubDocument(text: string): ScrubResult {
     .split('\n')
     .filter((line) => {
       const l = line.trim();
-      if (!l) return true;
+      // Long lines are body text (or a PDF flattened to one line): scrub them inline instead.
+      if (!l || l.length > 160) return true;
       if (CONTACT.some((re) => new RegExp(re.source, re.flags.replace('g', '')).test(l))) return false;
       if (ADDRESS.test(l)) return false;
       if (POSTCODE.test(l) && l.length < 60 && /,/.test(l)) return false;
       return true;
-    });
+    })
+    // Inline fallback: street addresses and alphanumeric postcodes inside longer text.
+    .map((l) =>
+      l
+        .replace(new RegExp(ADDRESS.source, 'gi'), '')
+        .replace(/\b([A-Z]\d[A-Z]\s?\d[A-Z]\d|[A-Z]{1,2}\d[A-Z\d]?\s\d[A-Z]{2})\b/g, ''),
+    );
   return scrubAnswer(lines.join('\n'));
 }
 

@@ -19,6 +19,7 @@ vi.mock('@/lib/auth', () => ({
     return state.viewer;
   },
   authMode: () => 'dev',
+  endDevSession: async () => {},
 }));
 
 vi.mock('next/cache', () => ({ revalidatePath: () => {}, revalidateTag: () => {} }));
