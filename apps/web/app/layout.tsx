@@ -6,7 +6,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: { default: brand.name, template: `%s · ${brand.name}` },
   description: brand.description,
-  metadataBase: new URL(`https://${brand.domain}`),
+  metadataBase: new URL(process.env.SITE_URL || `https://${brand.domain}`),
+  alternates: { types: { 'application/rss+xml': [{ url: '/feed.xml', title: brand.name }] } },
+  openGraph: { siteName: brand.name, locale: 'en_US', type: 'website' },
 };
 
 export const viewport: Viewport = {

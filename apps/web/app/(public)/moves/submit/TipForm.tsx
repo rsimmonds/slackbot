@@ -19,6 +19,8 @@ export function TipForm() {
         <p className="text-body text-text">
           Thank you. An editor will check the source before anything is published.
         </p>
+        {/* A full reload on purpose: it resets the form for the next tip. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/moves/submit"
           className="text-small text-text-2 underline underline-offset-4 hover:text-text"

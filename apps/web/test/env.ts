@@ -28,5 +28,6 @@ export const webTestEnv = {
   PAYMENTS_PROVIDER: 'fake',
   EMAIL_PROVIDER: 'outbox',
   APP_URL: 'http://localhost:3000',
+  SITE_URL: 'http://localhost:3000',
   NODE_ENV: 'test',
 };

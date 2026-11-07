@@ -1,6 +1,9 @@
 import { cn } from '../lib/cn';
 
-/** Amber seal marking a human decision. Shown only after a person has approved. */
+/**
+ * Amber seal marking a human decision. Shown only after a person has approved.
+ * Plain surface fill: amber ink on an amber tint falls below 4.5:1 in the Lab theme.
+ */
 export function HumanSeal({
   reviewer,
   at,
@@ -16,7 +19,7 @@ export function HumanSeal({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-3 rounded-control border border-filament/50 bg-filament-glow px-3 py-2',
+        'inline-flex items-center gap-3 rounded-control border border-filament/60 bg-surface px-3 py-2',
         className,
       )}
     >
