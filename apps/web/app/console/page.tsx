@@ -1,35 +1,69 @@
-import { DataCard, MeshPanel, Status } from '@cmobeat/ui';
+import { Button, DataCard, MeshPanel, MonoLabel, Status } from '@cmobeat/ui';
+import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
+import { isEditorial } from '@/lib/editorial/access';
+import { articleCounts } from '@/lib/editorial/articles';
+import { moveCounts } from '@/lib/editorial/moves';
 
 export const metadata = { title: 'Staff console' };
 
 export default async function ConsoleHome() {
   const viewer = await requireArea('staff');
-  const isEditor = viewer.roles.includes('editor') || viewer.roles.includes('admin');
+  const isEditor = isEditorial(viewer);
   const isTalent = viewer.roles.includes('talent_partner') || viewer.roles.includes('admin');
+  const [moves, articles] = isEditor
+    ? await Promise.all([moveCounts(viewer), articleCounts(viewer)])
+    : [null, null];
+  const waiting = (moves?.drafts ?? 0) + (articles?.inReview ?? 0);
+
   return (
     <DashboardFrame
       eyebrow="Staff console"
       title="Nothing reaches a reader, employer or candidate without you."
       lede="Agents draft and propose. You approve. Every decision is logged."
     >
-      <div className="col-span-12 grid gap-6 md:grid-cols-4">
-        <DataCard value="0" label="Drafts awaiting edit" />
-        <DataCard value="0" label="Matches awaiting review" />
-        <DataCard value="0" label="Agent runs today" />
-        <DataCard value="$0.00" label="Agent cost today" />
-      </div>
+      {isEditor && moves && articles ? (
+        <div className="col-span-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/console/editorial?tab=moves" className="rounded-panel">
+            <DataCard value={String(moves.drafts)} label="Moves awaiting review" />
+          </Link>
+          <Link href="/console/editorial?tab=articles" className="rounded-panel">
+            <DataCard value={String(articles.inReview)} label="Articles in review" />
+          </Link>
+          <DataCard
+            value={String(moves.approvedThisWeek + articles.publishedThisWeek)}
+            label="Published this week"
+            footnote={`${moves.approvedThisWeek} moves · ${articles.publishedThisWeek} articles`}
+          />
+          {/* JOBS workstream: listings awaiting moderation count goes here. */}
+          <DataCard value="—" label="Listings awaiting moderation" />
+        </div>
+      ) : null}
+
       {isEditor ? (
         <MeshPanel
           className="col-span-12 lg:col-span-6"
           eyebrow="Editorial"
-          title="Queue"
-          actions={<Status tone="machine">Moves Tracker idle</Status>}
+          title={waiting ? `${waiting} item${waiting === 1 ? '' : 's'} waiting` : 'Queue clear'}
+          actions={<Status tone="machine">Moves Tracker monitoring</Status>}
         >
-          <EmptyState>
-            AI-drafted moves and articles arrive here with sources. Opens in Phase 1.
-          </EmptyState>
+          <p className="text-small text-text-2">
+            {waiting
+              ? 'Drafts from the Moves Tracker and articles from writers. Check each against its sources.'
+              : 'Nothing is waiting. New drafts arrive here with their sources.'}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/console/editorial">Open queue</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/console/editorial/articles/new">New article</Link>
+            </Button>
+          </div>
+          {articles?.drafts ? (
+            <MonoLabel className="mt-4 block">{articles.drafts} drafts in progress</MonoLabel>
+          ) : null}
         </MeshPanel>
       ) : null}
       {isTalent ? (
