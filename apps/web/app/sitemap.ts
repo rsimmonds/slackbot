@@ -1,5 +1,6 @@
 import { withAnon } from '@cmobeat/db';
 import type { MetadataRoute } from 'next';
+import { publicIndustries, publicMarkets } from '@/lib/publication/aggregates';
 import { sitemapEntries } from '@/lib/publication/queries';
 import { siteUrl } from '@/lib/site';
 
@@ -8,7 +9,9 @@ export const dynamic = 'force-dynamic';
 /** Public pages only, read as an anonymous visitor so nothing private can leak in. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
-  const { articles, moves } = await withAnon((tx) => sitemapEntries(tx));
+  const [{ articles, moves }, industries] = await withAnon((tx) =>
+    Promise.all([sitemapEntries(tx), publicIndustries(tx)]),
+  );
   const staticPages = [
     '',
     '/jobs',
@@ -16,6 +19,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/articles',
     '/interviews',
     '/data',
+    '/data/report',
+    ...publicMarkets.map((m) => `/data/markets/${m.toLowerCase()}`),
+    ...industries.map((i) => `/data/industries/${i.slug}`),
     '/newsletter',
     '/newsletter/archive',
     '/legal/privacy',

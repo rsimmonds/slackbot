@@ -31,6 +31,7 @@ export {
   type EmailLayoutProps,
 } from './templates/Layout';
 export { newsletterConfirmEmail, newsletterWelcomeEmail } from './templates/newsletter';
+export { reportDownloadEmail } from './templates/report';
 export {
   introductionRequestedEmail,
   matchApprovedEmail,

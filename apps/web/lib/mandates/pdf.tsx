@@ -15,7 +15,7 @@ import { compRange, levelLabel, marketLabel, money, workTypeLabel } from './labe
 const font = (pkg: string, file: string) => join(process.cwd(), 'node_modules', pkg, 'files', file);
 
 let registered = false;
-function registerFonts() {
+export function registerFonts() {
   if (registered) return;
   Font.register({
     family: 'Instrument Serif',
