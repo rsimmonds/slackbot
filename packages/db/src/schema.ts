@@ -676,6 +676,7 @@ export const subscriptions = pgTable('subscriptions', {
   stripePriceId: text('stripe_price_id').notNull(),
   status: text('status').notNull(),
   seats: integer('seats').notNull().default(1),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
   currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
   ...timestamps(),
 });
@@ -698,6 +699,11 @@ export const apiKeys = pgTable('api_keys', {
   companyId: uuid('company_id')
     .notNull()
     .references(() => companies.id, { onDelete: 'cascade' }),
+  /** Human label, e.g. "Board dashboard". */
+  name: text('name').notNull().default('API key'),
+  /** First characters of the key, shown so people can tell keys apart. The key itself is only hashed. */
+  prefix: text('prefix').notNull().default(''),
+  createdBy: uuid('created_by').references(() => users.id),
   hashedKey: text('hashed_key').notNull().unique(),
   scopes: text('scopes')
     .array()
@@ -868,3 +874,82 @@ export const fairnessReports = pgTable('fairness_reports', {
   metrics: jsonb('metrics').$type<Record<string, unknown>>().notNull(),
   ...timestamps(),
 });
+
+// ---------------------------------------------------------------- Phase 4
+
+/** Invitations to an employer seat. The token is emailed once and stored only as a hash. */
+export const employerInvites = pgTable(
+  'employer_invites',
+  {
+    id: id(),
+    companyId: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    seatRole: seatRoleEnum('seat_role').notNull().default('member'),
+    tokenHash: text('token_hash').notNull().unique(),
+    invitedBy: uuid('invited_by')
+      .notNull()
+      .references(() => users.id),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    ...timestamps(),
+  },
+  (t) => [index('employer_invites_company_idx').on(t.companyId)],
+);
+
+/** One row per data API request: rate limiting and usage reporting. No request bodies. */
+export const apiRequests = pgTable(
+  'api_requests',
+  {
+    id: id(),
+    apiKeyId: uuid('api_key_id')
+      .notNull()
+      .references(() => apiKeys.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    status: integer('status').notNull(),
+    rows: integer('rows').notNull().default(0),
+    ...timestamps(),
+  },
+  (t) => [index('api_requests_key_time_idx').on(t.apiKeyId, t.createdAt)],
+);
+
+/** Gated report downloads. Each is tied to a subscriber (lead) who gave consent at the gate. */
+export const reportDownloads = pgTable(
+  'report_downloads',
+  {
+    id: id(),
+    reportSlug: text('report_slug').notNull(),
+    subscriberId: uuid('subscriber_id').references(() => subscribers.id, { onDelete: 'set null' }),
+    company: text('company'),
+    role: text('role'),
+    market: marketEnum('market'),
+    ...timestamps(),
+  },
+  (t) => [index('report_downloads_slug_idx').on(t.reportSlug, t.createdAt)],
+);
+
+export const coachingStatusEnum = pgEnum('coaching_status', [
+  'requested',
+  'scheduled',
+  'done',
+  'cancelled',
+]);
+
+/** Concierge tier: a candidate asks for human coaching. The topic is encrypted. */
+export const coachingRequests = pgTable(
+  'coaching_requests',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    topic: bytea('topic').notNull(),
+    status: coachingStatusEnum('status').notNull().default('requested'),
+    talentPartnerId: uuid('talent_partner_id').references(() => users.id),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    ...timestamps(),
+  },
+  (t) => [index('coaching_requests_status_idx').on(t.status, t.createdAt)],
+);
