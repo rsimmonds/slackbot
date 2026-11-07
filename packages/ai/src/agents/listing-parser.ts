@@ -1,5 +1,6 @@
-import type { ParsedListing } from '../schemas/listing';
+import { ParsedListingSchema, type ParsedListing } from '../schemas/listing';
 import type { AgentResult } from '../types';
+import { heuristicParseListing } from './listing-heuristic';
 
 export interface ParseListingInput {
   /** Pasted job description. */
@@ -10,7 +11,14 @@ export interface ParseListingInput {
   actorId?: string;
 }
 
-/** CONTRACT STUB — replaced by the Listing Parser implementation (Phase 1, agents workstream). */
-export async function parseListing(_input: ParseListingInput): Promise<AgentResult<ParsedListing>> {
-  throw new Error('parseListing not implemented yet');
+/**
+ * CONTRACT. Offline heuristic path only, for now. The agents workstream adds the Claude-backed
+ * path, URL fetching, agent_runs logging and the human-queue fallback behind this same signature.
+ */
+export async function parseListing(input: ParseListingInput): Promise<AgentResult<ParsedListing>> {
+  if (!input.text?.trim()) {
+    return { ok: false, reason: 'Paste the job description text.', runId: 'offline', queued: true };
+  }
+  const output = ParsedListingSchema.parse(heuristicParseListing(input.text));
+  return { ok: true, output, runId: 'offline' };
 }
