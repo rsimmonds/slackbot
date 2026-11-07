@@ -18,6 +18,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/data',
     '/newsletter',
     '/newsletter/archive',
+    '/legal/privacy',
+    '/legal/terms',
+    '/legal/cookies',
+    '/legal/subprocessors',
+    '/legal/ai',
   ];
   return [
     ...staticPages.map((p) => ({
