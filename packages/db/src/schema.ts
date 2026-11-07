@@ -72,6 +72,12 @@ export const matchStatusEnum = pgEnum('match_status', [
   'rejected',
   'revealed',
 ]);
+export const matchResponseEnum = pgEnum('match_response', [
+  'pending',
+  'interested',
+  'declined',
+  'question',
+]);
 export const revealDecisionEnum = pgEnum('reveal_decision', ['pending', 'accepted', 'declined']);
 export const sessionKindEnum = pgEnum('session_kind', ['mandate', 'profile']);
 export const sessionStatusEnum = pgEnum('session_status', [
@@ -395,6 +401,13 @@ export const searches = pgTable('searches', {
   talentPartnerId: uuid('talent_partner_id').references(() => users.id),
   feeTerms: jsonb('fee_terms').$type<Record<string, unknown>>().notNull().default({}),
   stripeInvoiceId: text('stripe_invoice_id'),
+  /** Placement: the match that was hired, the agreed comp, and when. Drives the success-fee invoice. */
+  placedMatchId: uuid('placed_match_id'),
+  hiredAt: timestamp('hired_at', { withTimezone: true }),
+  /** First-year cash comp (ai_search) or monthly retainer (fractional_match), in minor-free whole units. */
+  placementComp: integer('placement_comp'),
+  placementCurrency: currencyEnum('placement_currency'),
+  invoiceStatus: text('invoice_status'),
   ...timestamps(),
 });
 
@@ -434,6 +447,13 @@ export const matches = pgTable(
     status: matchStatusEnum('status').notNull().default('proposed'),
     reviewedBy: uuid('reviewed_by').references(() => users.id),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    /** The candidate's answer to an approved match, before any reveal. */
+    candidateResponse: matchResponseEnum('candidate_response').notNull().default('pending'),
+    /** Encrypted note or question from the candidate to their talent partner. */
+    candidateNote: bytea('candidate_note'),
+    candidateRespondedAt: timestamp('candidate_responded_at', { withTimezone: true }),
+    /** Set when the match was made for a paid search. */
+    searchId: uuid('search_id').references(() => searches.id),
     agentRunId: uuid('agent_run_id').references(() => agentRuns.id),
     ...timestamps(),
   },
@@ -832,3 +852,19 @@ export const dataRequests = pgTable(
   },
   (t) => [index('data_requests_status_idx').on(t.status, t.dueAt)],
 );
+
+// ---------------------------------------------------------------- Phase 3
+
+/**
+ * Weekly fairness report for the Matcher (spec 7.1.9, NYC LL144, EU AI Act). Built from synthetic
+ * profiles that differ only in protected attributes, plus aggregate match-rate statistics.
+ */
+export const fairnessReports = pgTable('fairness_reports', {
+  id: id(),
+  agent: text('agent').notNull(),
+  periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
+  periodEnd: timestamp('period_end', { withTimezone: true }).notNull(),
+  passed: boolean('passed').notNull(),
+  metrics: jsonb('metrics').$type<Record<string, unknown>>().notNull(),
+  ...timestamps(),
+});

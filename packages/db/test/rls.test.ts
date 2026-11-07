@@ -448,3 +448,139 @@ describe('staff_bylines', () => {
     expect(await count({ userId: U.reader, roles: ['reader'] })).toBe(0);
   });
 });
+
+describe('matching (Phase 3)', () => {
+  const MM = F.matches;
+  const candidateView = (userId: string, roles: Role[] = ['candidate']) =>
+    as(userId, roles, async (tx) => [
+      ...(await tx.execute<Record<string, unknown>>(
+        sql`select * from candidate_match_view order by match_id`,
+      )),
+    ]);
+
+  it('a candidate cannot change a match status, only their own response', async () => {
+    await expectPgError(
+      as(U.candA, ['candidate'], (tx) =>
+        tx.update(s.matches).set({ status: 'revealed' }).where(eq(s.matches.id, MM.XA)),
+      ),
+      INSUFFICIENT_PRIVILEGE,
+    );
+    const answered = await as(U.candA, ['candidate'], (tx) =>
+      tx
+        .update(s.matches)
+        .set({ candidateResponse: 'interested', candidateRespondedAt: new Date() })
+        .where(eq(s.matches.id, MM.XA))
+        .returning({ id: s.matches.id, status: s.matches.status }),
+    );
+    expect(answered).toEqual([{ id: MM.XA, status: 'approved' }]);
+    // Someone else's match: no rows touched.
+    const other = await as(U.candA, ['candidate'], (tx) =>
+      tx
+        .update(s.matches)
+        .set({ candidateResponse: 'declined' })
+        .where(eq(s.matches.id, MM.XB))
+        .returning(),
+    );
+    expect(other).toHaveLength(0);
+  });
+
+  it('a talent partner cannot answer a match for the candidate', async () => {
+    await expectPgError(
+      as(U.talent, ['talent_partner'], (tx) =>
+        tx.update(s.matches).set({ candidateResponse: 'declined' }).where(eq(s.matches.id, MM.XA)),
+      ),
+      INSUFFICIENT_PRIVILEGE,
+    );
+  });
+
+  it('the candidate view hides the company until reveal, and never shows blocklisted companies', async () => {
+    const rows = await candidateView(U.candA);
+    const byId = Object.fromEntries(rows.map((r) => [r.match_id as string, r]));
+    expect(byId[MM.XA]!.company_name).toBeNull();
+    expect(byId[MM.XA]!.company_industry).toBeTruthy();
+    expect(byId[MM.YA]!.company_name).toBeTruthy(); // revealed
+    // candC blocklists X: the approved X match never appears.
+    expect((await candidateView(U.candC)).map((r) => r.match_id)).not.toContain(MM.XC);
+    // Not a candidate, or someone else: nothing.
+    expect(await candidateView(U.employerX, ['employer'])).toHaveLength(0);
+    expect(await candidateView(U.talent, ['talent_partner', 'candidate'])).toHaveLength(0);
+  });
+
+  it('accepting a reveal with live consent reveals identity to that employer only', async () => {
+    const [request] = await as(U.employerX, ['employer'], (tx) =>
+      tx
+        .insert(s.revealRequests)
+        .values({ matchId: MM.XA, requestedBy: U.employerX })
+        .returning({ id: s.revealRequests.id }),
+    );
+    const [consent] = await adminDb()
+      .insert(s.consents)
+      .values({ subjectUserId: U.candA, kind: 'reveal', scope: { matchId: MM.XA } })
+      .returning({ id: s.consents.id });
+    await as(U.candA, ['candidate'], (tx) =>
+      tx
+        .update(s.revealRequests)
+        .set({ candidateDecision: 'accepted', consentId: consent!.id, decidedAt: new Date() })
+        .where(eq(s.revealRequests.id, request!.id)),
+    );
+    const [match] = await adminDb()
+      .select({ status: s.matches.status })
+      .from(s.matches)
+      .where(eq(s.matches.id, MM.XA));
+    expect(match!.status).toBe('revealed');
+    const employerRows = await as(U.employerX, ['employer'], (tx) =>
+      tx.execute<Record<string, unknown>>(
+        sql`select * from employer_match_view where match_id = ${MM.XA}`,
+      ),
+    );
+    expect([...employerRows][0]!.candidate_name).toBe('Fixture cand-a');
+    // Company Y employer still cannot see the X match.
+    const yRows = await as(U.employerY, ['employer'], (tx) =>
+      tx.execute(sql`select * from employer_match_view where match_id = ${MM.XA}`),
+    );
+    expect([...yRows]).toHaveLength(0);
+
+    // Restore the fixture.
+    await adminDb().delete(s.revealRequests).where(eq(s.revealRequests.id, request!.id));
+    await adminDb().update(s.matches).set({ status: 'approved' }).where(eq(s.matches.id, MM.XA));
+    await adminDb().delete(s.consents).where(eq(s.consents.id, consent!.id));
+  });
+
+  it('an employer can request a paid search only for its own confirmed mandate', async () => {
+    await adminDb()
+      .update(s.mandates)
+      .set({ confirmedAt: new Date() })
+      .where(eq(s.mandates.id, F.mandates.X));
+    const ok = await as(U.employerX, ['employer'], (tx) =>
+      tx.insert(s.searches).values({ mandateId: F.mandates.X, plan: 'ai_search' }).returning(),
+    );
+    expect(ok).toHaveLength(1);
+    await expectPgError(
+      as(U.employerX, ['employer'], (tx) =>
+        tx.insert(s.searches).values({ mandateId: F.mandates.Y, plan: 'ai_search' }),
+      ),
+      INSUFFICIENT_PRIVILEGE,
+    );
+    await adminDb().delete(s.searches).where(eq(s.searches.id, ok[0]!.id));
+  });
+
+  it('fairness reports are visible to staff only', async () => {
+    await adminDb()
+      .insert(s.fairnessReports)
+      .values({
+        agent: 'matcher',
+        periodStart: new Date(Date.now() - 7 * 864e5),
+        periodEnd: new Date(),
+        passed: true,
+        metrics: {},
+      });
+    const staff = await as(U.talent, ['talent_partner'], (tx) =>
+      tx.select().from(s.fairnessReports),
+    );
+    expect(staff.length).toBeGreaterThan(0);
+    const employer = await as(U.employerX, ['employer'], (tx) =>
+      tx.select().from(s.fairnessReports),
+    );
+    expect(employer).toHaveLength(0);
+  });
+});
