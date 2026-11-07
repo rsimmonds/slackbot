@@ -1,24 +1,26 @@
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import postgres from 'postgres';
-import { testEnv } from './env';
+import { webTestEnv } from './env';
 
-/** Creates the web test database if needed, then resets and seeds it once per run. */
+/** Create the web test database if needed, then reset, migrate and seed it with the real seed. */
 export default async function setup() {
-  Object.assign(process.env, testEnv);
-  const url = new URL(testEnv.DATABASE_URL);
-  const dbName = url.pathname.slice(1);
-  const adminUrl = new URL(testEnv.DATABASE_URL);
-  adminUrl.pathname = '/postgres';
-  const sql = postgres(adminUrl.toString(), { max: 1, onnotice: () => {} });
+  const target = new URL(webTestEnv.DATABASE_URL);
+  const name = target.pathname.slice(1);
+  if (!/^[a-z0-9_]+$/.test(name)) throw new Error(`Unsafe test database name: ${name}`);
+  const admin = new URL(webTestEnv.DATABASE_URL);
+  admin.pathname = '/postgres';
+  const sql = postgres(admin.toString(), { max: 1, onnotice: () => {} });
   try {
-    const [exists] = await sql`select 1 from pg_database where datname = ${dbName}`;
-    if (!exists) await sql.unsafe(`create database "${dbName.replace(/"/g, '')}"`);
+    const [exists] = await sql`select 1 from pg_database where datname = ${name}`;
+    if (!exists) await sql.unsafe(`create database "${name}"`);
   } finally {
     await sql.end();
   }
-  // Relative imports: these are dev/test utilities of the db package, not part of its public API.
-  const { resetDatabase } = await import('../../../packages/db/src/reset');
-  const { seed } = await import('../../../packages/db/src/seed/index');
-  const { closeDb } = await import('@cmobeat/db');
-  await resetDatabase({ seed: () => seed() });
-  await closeDb();
+  const root = fileURLToPath(new URL('../../../', import.meta.url));
+  execFileSync('pnpm', ['--filter', '@cmobeat/db', 'reset'], {
+    cwd: root,
+    stdio: 'pipe',
+    env: { ...process.env, ...webTestEnv, NODE_ENV: 'development' },
+  });
 }

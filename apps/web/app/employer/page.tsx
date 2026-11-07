@@ -1,6 +1,9 @@
 import { Button, DataCard, MeshPanel, Status } from '@cmobeat/ui';
+import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
+import { asViewer } from '@/lib/db';
+import { employerCompany, employerListings } from '@/lib/jobs/posting';
 import { companyForEmployer } from '@/lib/users';
 
 export const metadata = { title: 'Employer' };
@@ -8,6 +11,12 @@ export const metadata = { title: 'Employer' };
 export default async function EmployerHome() {
   const viewer = await requireArea('employer');
   const company = await companyForEmployer(viewer.id);
+  const rows = await asViewer(viewer, async (tx) => {
+    const c = await employerCompany(tx, viewer.id);
+    return c ? employerListings(tx, c.id) : [];
+  });
+  const live = rows.filter((r) => r.status === 'live').length;
+  const inReview = rows.filter((r) => r.status === 'pending_review').length;
   return (
     <DashboardFrame
       eyebrow={company ? `Employer · ${company}` : 'Employer'}
@@ -28,13 +37,22 @@ export default async function EmployerHome() {
           <Button variant="machine" disabled>
             Start a session
           </Button>
-          <Button variant="secondary" disabled>
-            Post a job
+          <Button asChild variant="secondary">
+            <Link href="/employer/jobs/new">Post a job</Link>
           </Button>
         </div>
       </MeshPanel>
       <div className="col-span-12 grid gap-6 lg:col-span-4">
-        <DataCard value="0" label="Live listings" />
+        <Link
+          href="/employer/jobs"
+          aria-label={`${live} live listings, ${inReview} in review. Manage listings`}
+        >
+          <DataCard
+            value={String(live)}
+            label="Live listings"
+            footnote={inReview ? `${inReview} with our editors` : undefined}
+          />
+        </Link>
         <DataCard value="0" label="Active searches" />
       </div>
       <MeshPanel className="col-span-12" eyebrow="Searches" title="Shortlists">

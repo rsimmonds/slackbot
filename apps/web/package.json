@@ -18,6 +18,7 @@
     "@cmobeat/config": "workspace:*",
     "@cmobeat/db": "workspace:*",
     "@cmobeat/email": "workspace:*",
+    "@cmobeat/payments": "workspace:*",
     "@cmobeat/ui": "workspace:*",
     "drizzle-orm": "0.45.4",
     "inngest": "4.26.2",

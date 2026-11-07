@@ -1,5 +1,7 @@
 import { Button, DataCard, MeshPanel, MonoLabel, Status } from '@cmobeat/ui';
 import Link from 'next/link';
+import { asViewer } from '@/lib/db';
+import { listingCounts } from '@/lib/jobs/moderation';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
 import { isEditorial } from '@/lib/editorial/access';
@@ -11,6 +13,7 @@ export const metadata = { title: 'Staff console' };
 export default async function ConsoleHome() {
   const viewer = await requireArea('staff');
   const isEditor = isEditorial(viewer);
+  const listingsInReview = (await asViewer(viewer, listingCounts)).pending_review ?? 0;
   const isTalent = viewer.roles.includes('talent_partner') || viewer.roles.includes('admin');
   const [moves, articles] = isEditor
     ? await Promise.all([moveCounts(viewer), articleCounts(viewer)])
@@ -36,8 +39,9 @@ export default async function ConsoleHome() {
             label="Published this week"
             footnote={`${moves.approvedThisWeek} moves · ${articles.publishedThisWeek} articles`}
           />
-          {/* JOBS workstream: listings awaiting moderation count goes here. */}
-          <DataCard value="—" label="Listings awaiting moderation" />
+          <Link href="/console/listings" className="rounded-panel">
+            <DataCard value={String(listingsInReview)} label="Listings awaiting moderation" />
+          </Link>
         </div>
       ) : null}
 
@@ -78,6 +82,18 @@ export default async function ConsoleHome() {
           </EmptyState>
         </MeshPanel>
       ) : null}
+      <MeshPanel
+        className="col-span-12"
+        eyebrow="Listings"
+        title={`${listingsInReview} awaiting review`}
+        actions={
+          <Link href="/console/listings" className="text-small text-text-2 hover:text-text">
+            Open queue
+          </Link>
+        }
+      >
+        <EmptyState>Paid job posts wait here until a person approves them.</EmptyState>
+      </MeshPanel>
       <MeshPanel className="col-span-12" eyebrow="Agents" title="Monitoring">
         <EmptyState>Run logs, cost, eval scores and fairness reports per agent.</EmptyState>
       </MeshPanel>

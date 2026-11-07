@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { MeshPanel, Status } from '@cmobeat/ui';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
@@ -23,7 +24,12 @@ export default async function AccountPage() {
         </EmptyState>
       </MeshPanel>
       <MeshPanel className="col-span-12 md:col-span-6" eyebrow="Jobs" title="Saved searches">
-        <EmptyState>No saved searches yet.</EmptyState>
+        <EmptyState>
+          Get an email when a new role matches your filters.{' '}
+          <Link href="/account/searches" className="text-text underline underline-offset-4">
+            Manage saved searches
+          </Link>
+        </EmptyState>
       </MeshPanel>
       <MeshPanel className="col-span-12" eyebrow="Privacy" title="Your data">
         <EmptyState>

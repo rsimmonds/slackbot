@@ -1,23 +1,23 @@
 import { defineConfig } from 'vitest/config';
-import { testEnv } from './test/env';
 
-const root = new URL('./', import.meta.url).pathname;
+const here = (p: string) => new URL(p, import.meta.url).pathname;
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['lib/**/*.test.ts', 'app/**/*.test.ts'],
-    env: { ...testEnv },
+    include: ['lib/**/*.test.ts', 'app/**/*.test.ts', 'test/**/*.test.ts'],
     globalSetup: ['./test/global-setup.ts'],
+    setupFiles: ['./test/setup.ts'],
+    // Integration tests share one database; run files one at a time.
     fileParallelism: false,
     testTimeout: 20_000,
     hookTimeout: 120_000,
   },
   resolve: {
     alias: {
-      '@/': `${root}`,
-      'server-only': `${root}test/empty.ts`,
+      '@': here('./'),
+      'server-only': here('./test/server-only.ts'),
     },
   },
 });
