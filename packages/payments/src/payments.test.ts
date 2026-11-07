@@ -1,4 +1,10 @@
-import { FakePaymentsProvider, buildFakeEvent, paymentsProvider } from './index';
+import { feeMinor, searchFeeTerms } from '@cmobeat/config';
+import {
+  FakePaymentsProvider,
+  buildFakeEvent,
+  buildFakeInvoicePaidEvent,
+  paymentsProvider,
+} from './index';
 import { signPayload, verifySignature } from './signing';
 import { WebhookSignatureError } from './types';
 
@@ -86,5 +92,71 @@ describe('provider selection', () => {
         STRIPE_PRICE_JOB_POST_FEATURED: 'price_b',
       } as NodeJS.ProcessEnv).name,
     ).toBe('stripe');
+  });
+});
+
+describe('fake invoices', () => {
+  const provider = new FakePaymentsProvider(secret);
+  const req = {
+    companyId: ids.companyId,
+    companyName: 'Sample Co',
+    billingEmail: 'billing@sample.example',
+    searchId: ids.listingId,
+    currency: 'EUR' as const,
+    dueDays: 30,
+    appOrigin: 'http://localhost:3000',
+  };
+
+  it('issues an invoice with a local TEST page and the summed total', async () => {
+    const inv = await provider.createInvoice({
+      ...req,
+      lines: [
+        { description: 'Success fee', amountMinor: 4_800_000 },
+        { description: 'Adjustment', amountMinor: 1 },
+      ],
+    });
+    expect(inv.ref).toMatch(/^fake_in_[0-9a-f]{32}$/);
+    expect(inv.url).toBe(`http://localhost:3000/billing/invoices/${inv.ref}`);
+    expect(inv.totalMinor).toBe(4_800_001);
+  });
+
+  it('refuses empty or fractional lines', async () => {
+    await expect(provider.createInvoice({ ...req, lines: [] })).rejects.toThrow();
+    await expect(
+      provider.createInvoice({ ...req, lines: [{ description: 'x', amountMinor: 1.5 }] }),
+    ).rejects.toThrow();
+  });
+
+  it('round-trips a signed invoice.paid event and rejects a forged one', async () => {
+    const ref = `fake_in_${'a'.repeat(32)}`;
+    const { body, headers } = buildFakeInvoicePaidEvent({ ref, amountPaid: 123 }, secret);
+    const event = await provider.parseWebhook(body, new Headers(headers));
+    expect(event).toMatchObject({ kind: 'invoice.paid', ref, amountPaid: 123, provider: 'fake' });
+    const forged = buildFakeInvoicePaidEvent({ ref, amountPaid: 1 }, 'x'.repeat(64));
+    await expect(provider.parseWebhook(forged.body, new Headers(forged.headers))).rejects.toThrow(
+      WebhookSignatureError,
+    );
+  });
+});
+
+describe('search fee maths', () => {
+  it('computes fees in minor units with integer maths', () => {
+    // 12% of $400,000 first-year cash comp = $48,000.00
+    expect(feeMinor(400_000, searchFeeTerms.ai_search.rateBps)).toBe(4_800_000);
+    // 15% of a €14,000 monthly retainer = €2,100.00
+    expect(feeMinor(14_000, searchFeeTerms.fractional_match.rateBps)).toBe(210_000);
+    expect(feeMinor(333_333, 1200)).toBe(3_999_996);
+  });
+
+  it('rounds half up to the nearest minor unit for fractional basis points', () => {
+    expect(feeMinor(1, 1250)).toBe(13); // 12.5 cents rounds up to 13
+    expect(feeMinor(1, 1249)).toBe(12); // 12.49 cents rounds down to 12
+    expect(feeMinor(3, 1)).toBe(0); // 0.03 cents rounds to 0
+  });
+
+  it('rejects non-integer or negative amounts and rates', () => {
+    expect(() => feeMinor(1.5, 1200)).toThrow();
+    expect(() => feeMinor(-1, 1200)).toThrow();
+    expect(() => feeMinor(1, 12.5)).toThrow();
   });
 });

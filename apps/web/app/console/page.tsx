@@ -2,6 +2,7 @@ import { Button, DataCard, MeshPanel, MonoLabel, Status } from '@cmobeat/ui';
 import Link from 'next/link';
 import { asViewer } from '@/lib/db';
 import { listingCounts } from '@/lib/jobs/moderation';
+import { listConsoleSearches } from '@/lib/searches/service';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
 import { isEditorial } from '@/lib/editorial/access';
@@ -15,6 +16,11 @@ export default async function ConsoleHome() {
   const viewer = await requireArea('staff');
   const isEditor = isEditorial(viewer);
   const listingsInReview = (await asViewer(viewer, listingCounts)).pending_review ?? 0;
+  const runsSearches = viewer.roles.includes('talent_partner') || viewer.roles.includes('admin');
+  const searchesWaiting = runsSearches
+    ? (await listConsoleSearches(viewer)).filter((s) => !s.talentPartnerId && s.status !== 'closed')
+        .length
+    : 0;
   const isTalent = viewer.roles.includes('talent_partner') || viewer.roles.includes('admin');
   const [moves, articles] = isEditor
     ? await Promise.all([moveCounts(viewer), articleCounts(viewer)])
@@ -87,6 +93,20 @@ export default async function ConsoleHome() {
           <EmptyState>
             Every proposed match, its rationale and audit trail. You approve, edit or reject.
           </EmptyState>
+        </MeshPanel>
+      ) : null}
+      {runsSearches ? (
+        <MeshPanel
+          className="col-span-12"
+          eyebrow="Searches"
+          title={`${searchesWaiting} waiting for a talent partner`}
+          actions={
+            <Link href="/console/searches" className="text-small text-text-2 hover:text-text">
+              Open searches
+            </Link>
+          }
+        >
+          <EmptyState>Paid searches requested by employers. Take one to start sourcing.</EmptyState>
         </MeshPanel>
       ) : null}
       <MeshPanel

@@ -5,6 +5,8 @@ import {
   type CheckoutPlan,
   type CheckoutRequest,
   type CheckoutSession,
+  type InvoiceRequest,
+  type IssuedInvoice,
   type PaymentEvent,
   type PaymentsProvider,
 } from './types';
@@ -41,6 +43,49 @@ export class StripePaymentsProvider implements PaymentsProvider {
     });
     if (!session.url) throw new Error('Stripe returned no checkout URL');
     return { url: session.url, ref: session.id };
+  }
+
+  /**
+   * Stripe Invoicing: one customer per company (found by metadata), an invoice item per line,
+   * then a finalized invoice sent by email with `days_until_due`. Untested against the live API.
+   */
+  async createInvoice(req: InvoiceRequest): Promise<IssuedInvoice> {
+    if (!req.lines.length) throw new Error('An invoice needs at least one line');
+    const found = await this.stripe.customers.search({
+      query: `metadata['companyId']:'${req.companyId.replace(/'/g, '')}'`,
+      limit: 1,
+    });
+    const customer =
+      found.data[0] ??
+      (await this.stripe.customers.create({
+        name: req.companyName,
+        email: req.billingEmail ?? undefined,
+        metadata: { companyId: req.companyId },
+      }));
+    const invoice = await this.stripe.invoices.create({
+      customer: customer.id,
+      collection_method: 'send_invoice',
+      days_until_due: req.dueDays,
+      auto_advance: false,
+      pending_invoice_items_behavior: 'exclude',
+      metadata: { companyId: req.companyId, searchId: req.searchId },
+    });
+    for (const line of req.lines) {
+      await this.stripe.invoiceItems.create({
+        customer: customer.id,
+        invoice: invoice.id,
+        amount: line.amountMinor,
+        currency: req.currency.toLowerCase(),
+        description: line.description,
+      });
+    }
+    const finalized = await this.stripe.invoices.finalizeInvoice(invoice.id!);
+    await this.stripe.invoices.sendInvoice(finalized.id!);
+    return {
+      ref: finalized.id!,
+      url: finalized.hosted_invoice_url ?? '',
+      totalMinor: finalized.total,
+    };
   }
 
   async parseWebhook(rawBody: string, headers: Headers): Promise<PaymentEvent> {
@@ -84,6 +129,16 @@ export class StripePaymentsProvider implements PaymentsProvider {
         amount: s.amount_total ?? 0,
         currency: currency as Currency,
         customerId: typeof s.customer === 'string' ? s.customer : (s.customer?.id ?? null),
+        provider: 'stripe',
+      };
+    }
+    if (event.type === 'invoice.paid') {
+      const inv = event.data.object as Stripe.Invoice;
+      return {
+        kind: 'invoice.paid',
+        eventId: event.id,
+        ref: inv.id!,
+        amountPaid: inv.amount_paid ?? null,
         provider: 'stripe',
       };
     }

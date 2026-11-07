@@ -46,11 +46,49 @@ export type PaymentEvent =
       listingId: string | null;
       provider: 'stripe' | 'fake';
     }
+  | {
+      kind: 'invoice.paid';
+      eventId: string;
+      /** Provider invoice reference, stored on payments.stripe_ref. */
+      ref: string;
+      /** Minor units actually paid, when the provider reports it. */
+      amountPaid: number | null;
+      provider: 'stripe' | 'fake';
+    }
   | { kind: 'ignored'; eventId: string; type: string; provider: 'stripe' | 'fake' };
+
+export interface InvoiceLine {
+  description: string;
+  /** Minor units (cents). */
+  amountMinor: number;
+}
+
+export interface InvoiceRequest {
+  companyId: string;
+  companyName: string;
+  /** Billing email for the company (Stripe sends the invoice there). */
+  billingEmail: string | null;
+  searchId: string;
+  lines: InvoiceLine[];
+  currency: Currency;
+  dueDays: number;
+  /** App origin, for the hosted invoice page of the fake provider. */
+  appOrigin: string;
+}
+
+export interface IssuedInvoice {
+  /** Provider reference (Stripe invoice id or fake_in_…). */
+  ref: string;
+  /** Where the employer can view or pay it. */
+  url: string;
+  totalMinor: number;
+}
 
 export interface PaymentsProvider {
   readonly name: 'stripe' | 'fake';
   createCheckout(req: CheckoutRequest): Promise<CheckoutSession>;
+  /** Issue and send an invoice (search success fees, fractional retainer fees). */
+  createInvoice(req: InvoiceRequest): Promise<IssuedInvoice>;
   /** Verifies the signature and returns the normalised event. Throws WebhookSignatureError. */
   parseWebhook(rawBody: string, headers: Headers): Promise<PaymentEvent>;
 }

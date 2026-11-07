@@ -17,6 +17,7 @@ import { Select } from '@/components/form/Select';
 import { requireArea } from '@/lib/auth';
 import type { CompBenchmark } from '@/lib/mandates/benchmark';
 import { confirmProblems, getMandate } from '@/lib/mandates/document';
+import { openSearchForMandate } from '@/lib/searches/service';
 import {
   compRange,
   fieldLabel,
@@ -114,6 +115,7 @@ export default async function MandatePage({
   const flash = await searchParams;
   const m = await getMandate(viewer, id);
   if (!m) notFound();
+  const openSearch = m.confirmedAt ? await openSearchForMandate(viewer, m.id) : null;
   const { doc, narrative } = m;
   const derived = new Set(narrative.derived);
   const problems = confirmProblems(doc);
@@ -146,6 +148,19 @@ export default async function MandatePage({
               Export PDF
             </a>
           </Button>
+          {m.confirmedAt ? (
+            <Button asChild variant="secondary" size="sm">
+              <Link
+                href={
+                  openSearch
+                    ? `/employer/searches/${openSearch.id}`
+                    : `/employer/searches/new?mandate=${m.id}`
+                }
+              >
+                {openSearch ? 'View search' : 'Request a search'}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       }
     >

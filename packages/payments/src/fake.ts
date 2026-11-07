@@ -6,16 +6,22 @@ import type {
   CheckoutPlan,
   CheckoutRequest,
   CheckoutSession,
+  InvoiceRequest,
+  IssuedInvoice,
   PaymentEvent,
   PaymentsProvider,
 } from './types';
 
 /**
- * Local stand-in for Stripe Checkout, used until Stripe keys exist. The app serves a clearly
- * labelled TEST checkout page at /checkout/fake/<ref>; "Pay" posts a signed event to the same
- * webhook route Stripe would use. Refused on production deployments.
+ * Local stand-in for Stripe, used until Stripe keys exist.
+ * - Checkout: a clearly labelled TEST page at /checkout/fake/<ref>; "Pay" posts a signed event to
+ *   the same webhook route Stripe would use.
+ * - Invoices: a TEST invoice page at /billing/invoices/<ref>; staff "Mark paid (test)" posts a
+ *   signed invoice.paid event to the same webhook.
+ * Refused on production deployments.
  */
 export const FAKE_CHECKOUT_PATH = '/checkout/fake';
+export const FAKE_INVOICE_PATH = '/billing/invoices';
 
 export function fakePaymentsSecret(env: NodeJS.ProcessEnv = process.env): string {
   if (env.FAKE_PAYMENTS_SECRET) return env.FAKE_PAYMENTS_SECRET;
@@ -24,7 +30,7 @@ export function fakePaymentsSecret(env: NodeJS.ProcessEnv = process.env): string
   return createHash('sha256').update(`fake-payments:${env.DEV_AUTH_SECRET}`).digest('hex');
 }
 
-const fakeEventSchema = z.object({
+const fakeCheckoutEvent = z.object({
   id: z.string().startsWith('evt_fake_'),
   type: z.enum(['checkout.session.completed', 'checkout.session.expired']),
   data: z.object({
@@ -35,16 +41,20 @@ const fakeEventSchema = z.object({
   }),
 });
 
+const fakeInvoiceEvent = z.object({
+  id: z.string().startsWith('evt_fake_'),
+  type: z.literal('invoice.paid'),
+  data: z.object({
+    ref: z.string().startsWith('fake_in_'),
+    amountPaid: z.number().int().nonnegative(),
+  }),
+});
+
 export const planAmount = (plan: CheckoutPlan) =>
   plan === 'featured' ? catalogue.job_post_featured.amount : catalogue.job_post_standard.amount;
 
-/** Builds and signs the event the TEST checkout page sends when someone presses Pay or Cancel. */
-export function buildFakeEvent(
-  data: { ref: string; listingId: string; companyId: string; plan: CheckoutPlan },
-  type: 'checkout.session.completed' | 'checkout.session.expired',
-  secret: string,
-): { body: string; headers: Record<string, string> } {
-  const body = JSON.stringify({ id: `evt_fake_${randomBytes(12).toString('hex')}`, type, data });
+const signed = (payload: unknown, secret: string) => {
+  const body = JSON.stringify(payload);
   return {
     body,
     headers: {
@@ -52,6 +62,24 @@ export function buildFakeEvent(
       [FAKE_SIGNATURE_HEADER]: signPayload(body, secret),
     },
   };
+};
+const eventId = () => `evt_fake_${randomBytes(12).toString('hex')}`;
+
+/** Builds and signs the event the TEST checkout page sends when someone presses Pay or Cancel. */
+export function buildFakeEvent(
+  data: { ref: string; listingId: string; companyId: string; plan: CheckoutPlan },
+  type: 'checkout.session.completed' | 'checkout.session.expired',
+  secret: string,
+): { body: string; headers: Record<string, string> } {
+  return signed({ id: eventId(), type, data }, secret);
+}
+
+/** Builds and signs the event staff send with "Mark paid (test)" on a TEST invoice. */
+export function buildFakeInvoicePaidEvent(
+  data: { ref: string; amountPaid: number },
+  secret: string,
+): { body: string; headers: Record<string, string> } {
+  return signed({ id: eventId(), type: 'invoice.paid', data }, secret);
 }
 
 export class FakePaymentsProvider implements PaymentsProvider {
@@ -64,9 +92,32 @@ export class FakePaymentsProvider implements PaymentsProvider {
     return { ref, url: `${origin}${FAKE_CHECKOUT_PATH}/${ref}` };
   }
 
+  async createInvoice(req: InvoiceRequest): Promise<IssuedInvoice> {
+    if (!req.lines.length) throw new Error('An invoice needs at least one line');
+    const totalMinor = req.lines.reduce((sum, l) => {
+      if (!Number.isSafeInteger(l.amountMinor) || l.amountMinor < 0)
+        throw new Error('Invoice line amounts must be whole minor units');
+      return sum + l.amountMinor;
+    }, 0);
+    const ref = `fake_in_${randomBytes(16).toString('hex')}`;
+    const origin = new URL(req.appOrigin).origin;
+    return { ref, url: `${origin}${FAKE_INVOICE_PATH}/${ref}`, totalMinor };
+  }
+
   async parseWebhook(rawBody: string, headers: Headers): Promise<PaymentEvent> {
     verifySignature(rawBody, headers.get(FAKE_SIGNATURE_HEADER), this.secret);
-    const event = fakeEventSchema.parse(JSON.parse(rawBody));
+    const json = JSON.parse(rawBody) as { type?: string };
+    if (json.type === 'invoice.paid') {
+      const event = fakeInvoiceEvent.parse(json);
+      return {
+        kind: 'invoice.paid',
+        eventId: event.id,
+        ref: event.data.ref,
+        amountPaid: event.data.amountPaid,
+        provider: 'fake',
+      };
+    }
+    const event = fakeCheckoutEvent.parse(json);
     if (event.type === 'checkout.session.expired') {
       return {
         kind: 'checkout.expired',

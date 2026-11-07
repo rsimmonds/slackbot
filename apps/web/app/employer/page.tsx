@@ -6,6 +6,7 @@ import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
 import { employerCompany, employerListings } from '@/lib/jobs/posting';
+import { listEmployerSearches } from '@/lib/searches/service';
 import { companyForEmployer } from '@/lib/users';
 
 export const metadata = { title: 'Employer' };
@@ -13,6 +14,9 @@ export const metadata = { title: 'Employer' };
 export default async function EmployerHome() {
   const viewer = await requireArea('employer');
   const company = await companyForEmployer(viewer.id);
+  const activeSearches = (await listEmployerSearches(viewer)).filter(
+    (s) => s.status !== 'closed',
+  ).length;
   const { rows, mandateCount, confirmedCount } = await asViewer(viewer, async (tx) => {
     const c = await employerCompany(tx, viewer.id);
     if (!c) return { rows: [], mandateCount: 0, confirmedCount: 0 };
@@ -79,7 +83,9 @@ export default async function EmployerHome() {
             footnote={inReview ? `${inReview} with our editors` : undefined}
           />
         </Link>
-        <DataCard value="0" label="Active searches" />
+        <Link href="/employer/searches" className="rounded-panel">
+          <DataCard value={String(activeSearches)} label="Active searches" />
+        </Link>
       </div>
       <MeshPanel className="col-span-12" eyebrow="Searches" title="Shortlists">
         <EmptyState>

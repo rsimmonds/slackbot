@@ -14,7 +14,8 @@ export const employerNav: NavLink[] = [
   { href: '/employer', label: 'Overview' },
   { href: '/employer/mandates', label: 'Mandates' },
   { href: '/employer/jobs', label: 'Listings' },
-  { href: '/employer/jobs/new', label: 'Post a job' },
+  { href: '/employer/searches', label: 'Searches' },
+  { href: '/employer/billing', label: 'Billing' },
   { href: '/account', label: 'Account' },
 ];
 
@@ -29,6 +30,7 @@ export const staffNav: NavLink[] = [
   { href: '/console', label: 'Overview' },
   { href: '/console/editorial', label: 'Editorial' },
   { href: '/console/listings', label: 'Listings' },
+  { href: '/console/searches', label: 'Searches' },
   { href: '/console/agents', label: 'Agents' },
   { href: '/console/sponsorships', label: 'Sponsorships' },
 ];
