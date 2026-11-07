@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Select } from '@/components/form/Select';
 import { FilterPanel } from '@/components/jobs/FilterPanel';
 import { JobCard } from '@/components/jobs/JobCard';
+import { SponsorSlot } from '@/components/sponsorships/SponsorSlot';
 import { getViewer } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
 import { hasFilters, parseFilters, toQuery } from '@/lib/jobs/filters';
@@ -125,6 +126,8 @@ export default async function JobsPage({
               ))}
             </ol>
           )}
+
+          <SponsorSlot placement="jobs_index" />
 
           {pages > 1 ? (
             <nav

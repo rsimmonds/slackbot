@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArticleCard, articleHref } from '@/components/publication/ArticleCard';
 import { NewsletterSignup } from '@/components/publication/NewsletterSignup';
 import { RoleCard } from '@/components/publication/RoleCard';
+import { SponsorSlot } from '@/components/sponsorships/SponsorSlot';
 import { getViewer } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
 import { consentText } from '@/lib/newsletter/service';
@@ -144,6 +145,8 @@ export default async function Home() {
           <NewsletterSignup consentText={consentText} source="home" />
         </div>
       </section>
+
+      <SponsorSlot placement="home" className="mt-20" />
 
       <section aria-labelledby="roles-title" className="mt-20">
         <div className="mb-6 flex items-end justify-between gap-4">

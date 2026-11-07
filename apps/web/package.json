@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test --trace off"
+    "test:e2e": "playwright test --trace off",
+    "evals:report": "tsx scripts/eval-report.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "7.9.25",
@@ -44,6 +45,7 @@
     "globals": "17.14.0",
     "postgres": "4.1.0",
     "tailwindcss": "4.3.5",
+    "tsx": "4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",
     "vitest": "5.1.0"
