@@ -117,7 +117,11 @@ test('security headers are set', async ({ request }) => {
 test('Cmd+K opens the command palette', async ({ page, isMobile }) => {
   test.skip(isMobile, 'keyboard shortcut is desktop-only');
   await signInAs(page, 'admin@sample.cmobeat.dev');
-  await page.waitForLoadState('networkidle');
-  await page.keyboard.press('ControlOrMeta+k');
-  await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
+  // Retry until the page has hydrated and the shortcut listener is attached. (Waiting for
+  // network idle is unreliable: background prefetches can stay open.)
+  const palette = page.getByRole('dialog', { name: 'Command palette' });
+  await expect(async () => {
+    if (!(await palette.isVisible())) await page.keyboard.press('ControlOrMeta+k');
+    await expect(palette).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
 });
