@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "7.9.25",
+    "@anthropic-ai/sdk": "1.6.0",
     "@cmobeat/ai": "workspace:*",
     "@cmobeat/config": "workspace:*",
     "@cmobeat/db": "workspace:*",

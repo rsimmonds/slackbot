@@ -4,6 +4,7 @@
  */
 import { AnthropicProvider } from '../provider';
 import { interviewSuites, runInterviewSuite } from '../interview/evals';
+import { providerMatcher, runFairnessSuite, runMatcherSuite } from '../matching';
 import { runSuite, suites } from './runner';
 
 const pct = (r: number | null) => (r === null ? '   n/a' : `${(r * 100).toFixed(0).padStart(5)}%`);
@@ -33,6 +34,21 @@ async function main() {
       `${r.suite.padEnd(24)} ${String(r.total).padStart(3)} cases | model (live scoring needs a key)      | offline fallback ${r.passed}/${r.total} ${pct(r.rate)} min ${r.threshold * 100}%`,
     );
     for (const f of r.failures) console.log(`  ✗ [fallback] ${f.id}: ${f.problems.join('; ')}`);
+  }
+  {
+    const r = await runMatcherSuite(
+      provider ? { matcher: providerMatcher(provider), live: true } : {},
+    );
+    ok &&= r.ok;
+    console.log(
+      `${'matcher'.padEnd(24)} ${String(r.total).padStart(3)} cases | ${live ? 'model' : 'offline'} ${r.passed}/${r.total} ${pct(r.rate)} min ${r.threshold * 100}%`,
+    );
+    for (const f of r.failures) console.log(`  ✗ ${f.id}: ${f.problems.join('; ')}`);
+    const fairness = await runFairnessSuite();
+    ok &&= fairness.passed;
+    console.log(
+      `${'matcher fairness'.padEnd(24)} ${String(fairness.sample.scoredVariants).padStart(3)} variants | invariance ${fairness.invariance.identicalInputs}/${fairness.invariance.pairsChecked} | min impact ratio ${fairness.minimumImpactRatio.toFixed(2)} (four-fifths: 0.80)`,
+    );
   }
   if (live) console.log(`Cost: $${(cost / 1e6).toFixed(4)}`);
   if (!ok) process.exitCode = 1;

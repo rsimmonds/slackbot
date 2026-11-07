@@ -6,6 +6,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Viewer } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
+import { onMandateConfirmed } from '@/lib/matching/triggers';
 import { SessionError } from '@cmobeat/ai/interview';
 import { computeBenchmark, type CompBenchmark } from './benchmark';
 
@@ -371,4 +372,6 @@ export async function confirmMandate(viewer: Viewer, id: string) {
       targetId: id,
     });
   });
+  // After commit: queue matching (proposals only; a talent partner reviews every one).
+  await onMandateConfirmed(id);
 }

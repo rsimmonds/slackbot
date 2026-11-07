@@ -1,4 +1,4 @@
-import { adminDb, auditLog, emailOutbox, payments, searches } from '@cmobeat/db';
+import { adminDb, auditLog, emailOutbox, matches, payments, searches } from '@cmobeat/db';
 import { latestEmailTo } from '@cmobeat/email';
 import { buildFakeInvoicePaidEvent, fakePaymentsSecret } from '@cmobeat/payments';
 import { and, eq, like } from 'drizzle-orm';
@@ -85,7 +85,7 @@ describe('requesting a search', () => {
 });
 
 describe('running a search', () => {
-  it('only talent partners assign and move it; transitions are enforced; matching failure is friendly', async () => {
+  it('only talent partners assign and move it; transitions are enforced; matching runs on sourcing', async () => {
     const mandateId = await confirmedMandate();
     signInAs('employer');
     const id = (await json(await request(mandateId))).data.id;
@@ -99,8 +99,14 @@ describe('running a search', () => {
     expect((await move(id, 'placed')).status).toBe(409); // only via placement
     const sourcing = await json(await move(id, 'sourcing'));
     expect(sourcing.data.status).toBe('sourcing');
-    // The matcher is another workstream; until it lands the move still happens, with a warning.
-    expect(sourcing.data.warning ?? '').toMatch(/matching|proposals/i);
+    // Sourcing runs blind matching for the search's mandate: proposals only, never approvals.
+    expect(sourcing.data.warning).toBeUndefined();
+    expect(typeof sourcing.data.proposed).toBe('number');
+    const proposals = await adminDb()
+      .select({ status: matches.status, searchId: matches.searchId })
+      .from(matches)
+      .where(eq(matches.mandateId, mandateId));
+    expect(proposals.every((p) => p.status === 'proposed' && p.searchId === id)).toBe(true);
     const audit = await adminDb()
       .select({ action: auditLog.action, metadata: auditLog.metadata })
       .from(auditLog)

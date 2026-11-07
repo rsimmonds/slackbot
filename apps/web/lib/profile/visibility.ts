@@ -4,6 +4,7 @@ import { and, asc, eq, ilike, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Viewer } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
+import { onProfileVisible } from '@/lib/matching/triggers';
 import { ensureProfile, ProfileError, requireCandidate } from './profile';
 
 export const visibilities = ['hidden', 'anonymous', 'open'] as const;
@@ -63,7 +64,7 @@ export const visibilitySchema = z.object({
 export async function setVisibility(viewer: Viewer, input: z.infer<typeof visibilitySchema>) {
   requireCandidate(viewer);
   const { visibility, consent } = visibilitySchema.parse(input);
-  return asViewer(viewer, async (tx) => {
+  const result = await asViewer(viewer, async (tx) => {
     const profile = await ensureProfile(tx, viewer);
     const from = profile.visibility;
     if (from === visibility) return { visibility, changed: false };
@@ -111,8 +112,17 @@ export async function setVisibility(viewer: Viewer, input: z.infer<typeof visibi
       targetId: profile.id,
       metadata: { from, to: visibility },
     });
-    return { visibility, changed: true };
+    return {
+      visibility,
+      changed: true,
+      // Hidden → anonymous/open makes the profile matchable for the first time.
+      matchableProfileId: from === 'hidden' ? profile.id : undefined,
+    };
   });
+  // After commit: queue matching (proposals only; a talent partner reviews every one).
+  if ('matchableProfileId' in result && result.matchableProfileId)
+    await onProfileVisible(result.matchableProfileId);
+  return { visibility: result.visibility, changed: result.changed };
 }
 
 // ---------------------------------------------------------------- blocklist
