@@ -1,6 +1,7 @@
 import { heuristicParseListing } from './agents/listing-heuristic';
 import { heuristicClassify, heuristicDraft } from './agents/moves-heuristic';
 import { readTagged, readSourceItem } from './format';
+import { matcherFallback } from './matching/rank';
 import { AnthropicProvider, FakeProvider, type Fallback, type LlmProvider } from './provider';
 
 /** Deterministic stand-ins used when no model is configured. */
@@ -8,6 +9,7 @@ export const offlineFallbacks: Record<string, Fallback> = {
   'listing-parser': (req) => heuristicParseListing(readTagged(req.user, 'job_description')),
   'moves-tracker.classify': (req) => heuristicClassify(readSourceItem(req.user)),
   'moves-tracker.draft': (req) => heuristicDraft(readSourceItem(req.user)),
+  matcher: matcherFallback,
 };
 
 export type ProviderName = 'anthropic' | 'fake';

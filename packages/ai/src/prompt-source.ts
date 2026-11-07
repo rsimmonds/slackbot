@@ -10,6 +10,7 @@ export const promptFiles = [
   'moves-tracker',
   'mandate-builder',
   'profile-interviewer',
+  'matcher',
 ] as const;
 
 export function readPromptSources(): Record<string, string> {

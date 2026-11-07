@@ -39,3 +39,10 @@ export function costMicros(
     usage.input * p.input + usage.output * p.output + (usage.cacheRead ?? 0) * p.cacheRead,
   );
 }
+
+/** Embedding models (spec 3: Voyage AI). The local model is a deterministic offline stand-in. */
+export const embeddingModels = {
+  voyage: 'voyage-3.5',
+  local: 'local-hash-v1',
+} as const;
+export const EMBEDDING_DIMENSIONS = 1024;

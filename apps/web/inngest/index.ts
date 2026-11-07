@@ -1,6 +1,12 @@
 import type { InngestFunction } from 'inngest';
 import { dataDeletions, dataExports, profileRetention } from './data-rights';
 import { listingExpiry, savedSearchAlerts } from './jobs';
+import {
+  fairnessWeekly,
+  matchNightly,
+  matchOnMandateConfirmed,
+  matchOnProfileVisible,
+} from './matching';
 import { movesSweep } from './moves-sweep';
 
 /** Registry of every background function. Each workstream adds its functions here. */
@@ -14,4 +20,9 @@ export const functions: InngestFunction.Any[] = [
   dataExports,
   dataDeletions,
   profileRetention,
+  // Matching (proposes only; a talent partner approves)
+  matchOnMandateConfirmed,
+  matchOnProfileVisible,
+  matchNightly,
+  fairnessWeekly,
 ];

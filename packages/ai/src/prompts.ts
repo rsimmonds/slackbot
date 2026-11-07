@@ -9,7 +9,7 @@ const stepSource: Record<AgentStep, { file: string; section: string | null } | n
   'moves-tracker.draft': { file: 'moves-tracker', section: 'Draft' },
   'mandate-builder': { file: 'mandate-builder', section: null },
   'profile-interviewer': { file: 'profile-interviewer', section: null },
-  matcher: null,
+  matcher: { file: 'matcher', section: null },
   'editorial-assistant': null,
 };
 
