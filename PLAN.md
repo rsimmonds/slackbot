@@ -2,7 +2,7 @@
 
 An AI-native publication and hiring platform for CMOs. This plan covers the file tree, data model, agents and phase checklist, plus the decisions that need approval before application code starts.
 
-Status: **Approved 2026-11-07. Phase 0 in progress.**
+Status: **Phases 0 and 1 complete (2026-11-07). Awaiting approval for Phase 2.**
 
 ---
 
@@ -148,23 +148,23 @@ Moves sources: company newsrooms (RSS), press wires, SEC EDGAR 8-K Item 5.02, us
 Each phase ends with a deployable app, a `CHANGELOG.md` entry, and a checkpoint (built / stubbed / open questions) before the next starts.
 
 ### Phase 0: Foundations
-- [ ] pnpm + Turborepo, TS strict, ESLint, Prettier, CI on every PR
-- [ ] Tokens (both themes), type scale, motion tokens, grain/mesh/glow utilities
-- [ ] Eight signature components with Storybook stories; automated WCAG AA contrast check in CI
-- [ ] Clerk auth, roles, staff MFA + 12h sessions
-- [ ] Drizzle schema, migrations, RLS policies, RLS integration tests
-- [ ] Seed script: 40 companies, 60 CMO profiles, 30 listings, 12 articles, all marked sample data
-- [ ] `.env.example`, `README.md`, `LEGAL_REVIEW.md` started
-- [ ] Vercel preview/prod config
+- [x] pnpm + Turborepo, TS strict, ESLint, Prettier, CI on every PR
+- [x] Tokens (both themes), type scale, motion tokens, grain/mesh/glow utilities
+- [x] Eight signature components with Storybook stories; automated WCAG AA contrast check in CI
+- [x] Clerk auth, roles, staff MFA + 12h sessions
+- [x] Drizzle schema, migrations, RLS policies, RLS integration tests
+- [x] Seed script: 40 companies, 60 CMO profiles, 30 listings, 12 articles, all marked sample data
+- [x] `.env.example`, `README.md`, `LEGAL_REVIEW.md` started
+- [x] Vercel preview/prod config
 - **Done when:** each role signs in to an empty styled dashboard in both themes; contrast check passes.
 
 ### Phase 1: Publication and job board
-- [ ] Home, articles, interviews, Moves archive + move pages, data pages, newsletter (double opt-in, archive, preferences)
-- [ ] Staff editorial queue with MDX editor and approve/reject
-- [ ] Moves Tracker → editorial queue
-- [ ] Jobs index (filters, comp on every card), job detail, saved searches, alerts
-- [ ] Post-a-job: Listing Parser → confirm → Stripe checkout → moderation → live
-- [ ] SEO: JSON-LD, sitemaps, `llms.txt`
+- [x] Home, articles, interviews, Moves archive + move pages, data pages, newsletter (double opt-in, archive, preferences)
+- [x] Staff editorial queue with MDX editor and approve/reject
+- [x] Moves Tracker → editorial queue
+- [x] Jobs index (filters, comp on every card), job detail, saved searches, alerts
+- [x] Post-a-job: Listing Parser → confirm → Stripe checkout → moderation → live
+- [x] SEO: JSON-LD, sitemaps, `llms.txt`
 - **Done when:** Playwright covers editor publishing a move and article, reader subscribing, employer paying for and publishing a parsed listing.
 
 ### Phase 2: AI layer

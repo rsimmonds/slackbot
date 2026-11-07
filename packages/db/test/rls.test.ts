@@ -433,3 +433,18 @@ describe('integrity rules', () => {
     );
   });
 });
+
+describe('staff_bylines', () => {
+  it('shows colleague names to staff and nothing to anyone else', async () => {
+    const { sql } = await import('drizzle-orm');
+    const count = async (ctx: { userId: string; roles: Role[] }) =>
+      withUser(
+        ctx,
+        async (tx) =>
+          (await tx.execute(sql`select count(*)::int as n from staff_bylines`))[0]!.n as number,
+      );
+    expect(await count({ userId: U.editor, roles: ['editor'] })).toBeGreaterThan(0);
+    expect(await count({ userId: U.employerX, roles: ['employer'] })).toBe(0);
+    expect(await count({ userId: U.reader, roles: ['reader'] })).toBe(0);
+  });
+});

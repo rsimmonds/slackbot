@@ -43,6 +43,13 @@
       "when": 1794066981817,
       "tag": "0005_jobs_resubmit",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794069002675,
+      "tag": "0006_staff_bylines",
+      "breakpoints": true
     }
   ]
 }

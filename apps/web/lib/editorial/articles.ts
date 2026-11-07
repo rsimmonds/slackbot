@@ -125,7 +125,10 @@ export async function getArticle(tx: Tx, idOrSlug: string) {
   return row ?? null;
 }
 
-/** Bylines: published authors are public; anyone else shows as "Staff writer". */
+/**
+ * Bylines: published authors are public to everyone; staff also see colleagues' names through
+ * staff_bylines. Anyone not visible to the viewer shows as "Staff writer".
+ */
 export async function bylines(tx: Tx, ids: string[]): Promise<Map<string, string>> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (!unique.length) return new Map();
@@ -133,7 +136,12 @@ export async function bylines(tx: Tx, ids: string[]): Promise<Map<string, string
     sql`select id, display_name from public_bylines where id in (${sql.join(
       unique.map((id) => sql`${id}::uuid`),
       sql`, `,
-    )})`,
+    )})
+        union
+        select id, display_name from staff_bylines where id in (${sql.join(
+          unique.map((id) => sql`${id}::uuid`),
+          sql`, `,
+        )})`,
   );
   return new Map([...rows].map((r) => [r.id, r.display_name]));
 }

@@ -22,6 +22,23 @@ import { createRng } from './rng';
  * 40 companies, 60 CMO profiles, 30 listings, 12 articles, 28 moves, and one dev user per role.
  * Everything is fictional and flagged is_sample = true.
  */
+/** Plausible sample cities per HQ country, so listings read like real ones. */
+const sampleCities: Record<string, string[]> = {
+  US: ['New York, NY', 'San Francisco, CA', 'Austin, TX', 'Boston, MA', 'Chicago, IL'],
+  CA: ['Toronto, ON', 'Vancouver, BC', 'Montréal, QC'],
+  GB: ['London', 'Manchester'],
+  SE: ['Stockholm'],
+  NL: ['Amsterdam'],
+  DE: ['Berlin', 'Munich'],
+  FR: ['Paris'],
+  ES: ['Madrid', 'Barcelona'],
+  IE: ['Dublin'],
+};
+function cityFor(country: string, r: { pick<T>(xs: readonly T[]): T }): string {
+  const options = sampleCities[country];
+  return options ? r.pick(options) : country;
+}
+
 export async function seed(db: Db = adminDb()): Promise<SeedSummary> {
   const [{ count } = { count: 0 }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -303,7 +320,7 @@ export async function seed(db: Db = adminDb()): Promise<SeedSummary> {
           currency,
           compBasis: fractional ? 'monthly_retainer' : 'annual',
           workType: fractional ? 'fractional' : 'full_time',
-          location: company.hqCountry,
+          location: cityFor(company.hqCountry, rng),
           remote: rng.chance(0.35),
           market: company.market,
           confirmedAt: daysAgo(rng.int(5, 80)),

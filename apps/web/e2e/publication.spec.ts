@@ -70,15 +70,23 @@ test('an interview has chapters and a transcript', async ({ page }) => {
 
 test('the Moves archive filters by type and search, and a move lists its sources', async ({
   page,
+  request,
 }) => {
+  // Pick a real approved departure from the public API so the test doesn't depend on seed order.
+  const { data: departures } = (await (
+    await request.get('/api/moves?type=departed&limit=1')
+  ).json()) as { data: { company: { name: string } }[] };
+  expect(departures.length).toBeGreaterThan(0);
+  const company = departures[0]!.company.name;
+
   await page.goto('/moves');
   await page.getByLabel('Move type').selectOption('departed');
-  await page.getByLabel('Search').fill('Corvid');
+  await page.getByLabel('Search').fill(company);
   await page.getByRole('button', { name: 'Apply' }).click();
   await expect(page).toHaveURL(/type=departed/);
-  await expect(page.getByRole('status').filter({ hasText: 'match these filters' })).toContainText(
-    '2 moves',
-  );
+  const status = page.getByRole('status').filter({ hasText: 'these filters' });
+  await expect(status).toContainText(/\b[1-9]\d* moves?\b/);
+  await expect(page.getByRole('region', { name: 'Archive' })).toContainText(company);
   await expectAccessible(page);
 
   await page.getByRole('region', { name: 'Archive' }).getByRole('link').first().click();

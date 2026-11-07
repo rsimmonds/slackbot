@@ -21,6 +21,12 @@ env:
   # CI-only throwaway values. Real secrets live in Vercel / GitHub environments.
   DEV_AUTH_SECRET: ci-only-dev-auth-secret-not-for-production-use
   ENCRYPTION_MASTER_KEY: Q0ktT05MWS1rZXktbm90LWZvci1wcm9kdWN0aW9uISE=
+  # Offline providers: no network calls to Anthropic, Stripe or Resend from CI.
+  AI_PROVIDER: fake
+  PAYMENTS_PROVIDER: fake
+  EMAIL_PROVIDER: outbox
+  SITE_URL: http://localhost:3100
+  APP_URL: http://localhost:3100
 
 jobs:
   checks:
@@ -49,8 +55,10 @@ jobs:
         run: pnpm typecheck
       - name: Contrast (WCAG 2.2 AA)
         run: pnpm contrast
-      - name: Unit and integration tests
+      - name: Unit, integration and agent eval tests
         run: pnpm test
+      - name: Agent evals (offline)
+        run: pnpm --filter @cmobeat/ai evals
       - name: Migrate and seed
         run: pnpm db:reset
       - name: Build

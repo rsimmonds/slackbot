@@ -126,9 +126,17 @@ export function effectiveDateOf(text: string): string | null {
   const m = text.match(
     /effective\s+(?:as of\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s+(\d{4})/i,
   );
-  if (!m) return null;
-  const month = String(MONTHS.indexOf(m[1]!.toLowerCase()) + 1).padStart(2, '0');
-  return `${m[3]}-${month}-${m[2]!.padStart(2, '0')}`;
+  if (m) {
+    const month = String(MONTHS.indexOf(m[1]!.toLowerCase()) + 1).padStart(2, '0');
+    return `${m[3]}-${month}-${m[2]!.padStart(2, '0')}`;
+  }
+  // European order: "joins on 1 January 2027", "effective 14 November 2026".
+  const eu = text.match(
+    /(?:effective|joins?\s+on|starts?\s+on|starting)\s+(?:as of\s+)?(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i,
+  );
+  if (!eu) return null;
+  const month = String(MONTHS.indexOf(eu[2]!.toLowerCase()) + 1).padStart(2, '0');
+  return `${eu[3]}-${month}-${eu[1]!.padStart(2, '0')}`;
 }
 
 export function heuristicClassify(item: SourceItemPayload): MoveClassification {

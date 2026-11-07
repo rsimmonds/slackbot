@@ -1,15 +1,39 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalEnv": [
-    "NODE_ENV",
-    "DATABASE_URL",
-    "APP_DATABASE_URL",
-    "AUTH_MODE",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-    "CLERK_SECRET_KEY",
-    "DEV_AUTH_SECRET",
-    "ENCRYPTION_MASTER_KEY",
+    "AI_PROVIDER",
     "ALLOW_DEV_AUTH_IN_PRODUCTION",
+    "ANTHROPIC_API_KEY",
+    "APP_DATABASE_URL",
+    "APP_URL",
+    "AUTH_MODE",
+    "CLERK_SECRET_KEY",
+    "COMPANY_POSTAL_ADDRESS",
+    "CRON_SECRET",
+    "DATABASE_URL",
+    "DEV_AUTH_SECRET",
+    "EMAIL_FROM",
+    "EMAIL_PROVIDER",
+    "ENCRYPTION_MASTER_KEY",
+    "EVALS_LIVE",
+    "FAKE_PAYMENTS_SECRET",
+    "MOVES_NEWSROOM_FEEDS",
+    "MOVES_SOURCES",
+    "MOVES_WIRE_FEEDS",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    "NODE_ENV",
+    "PAYMENTS_PROVIDER",
+    "RATE_LIMIT_SALT",
+    "RESEND_API_KEY",
+    "RESEND_NEWSLETTER_SEGMENT_ID",
+    "SEC_USER_AGENT",
+    "SITE_URL",
+    "STRIPE_PRICE_JOB_POST_FEATURED",
+    "STRIPE_PRICE_JOB_POST_STANDARD",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "TEST_APP_DATABASE_URL",
+    "TEST_DATABASE_URL",
     "VERCEL_ENV"
   ],
   "tasks": {
@@ -17,9 +41,16 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "storybook-static/**"]
     },
-    "dev": { "cache": false, "persistent": true },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
     "lint": {},
-    "typecheck": { "dependsOn": ["^typecheck"] },
-    "test": { "cache": false }
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
+    "test": {
+      "cache": false
+    }
   }
 }

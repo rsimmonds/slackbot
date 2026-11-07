@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
 import { isEditorial } from '@/lib/editorial/access';
-import { listQueueArticles } from '@/lib/editorial/articles';
+import { bylines, listQueueArticles } from '@/lib/editorial/articles';
+import { asViewer } from '@/lib/db';
 import { age, articleStatusLabel, articleTypeLabel, moveTypeLabel } from '@/lib/editorial/format';
 import { confidenceLabel, listMoveDrafts } from '@/lib/editorial/moves';
 
@@ -40,6 +41,12 @@ export default async function EditorialQueue({
     listMoveDrafts(viewer),
     listQueueArticles(viewer),
   ]);
+  const names = await asViewer(viewer, (tx) =>
+    bylines(
+      tx,
+      queueArticles.map((a) => a.authorId),
+    ),
+  );
   const active = tab === 'articles' ? 'articles' : 'moves';
   const inReview = queueArticles.filter((a) => a.status === 'in_review').length;
 
@@ -163,7 +170,9 @@ export default async function EditorialQueue({
                         <MonoLabel>{articleTypeLabel[a.type]}</MonoLabel>
                         {a.agentRunId ? <Status tone="machine">AI draft</Status> : null}
                         <MonoLabel>
-                          {a.authorId === viewer.id ? 'By you' : 'Staff writer'}
+                          {a.authorId === viewer.id
+                            ? 'By you'
+                            : `By ${names.get(a.authorId) ?? 'staff writer'}`}
                         </MonoLabel>
                       </span>
                     </span>
