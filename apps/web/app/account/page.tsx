@@ -33,7 +33,10 @@ export default async function AccountPage() {
       </MeshPanel>
       <MeshPanel className="col-span-12" eyebrow="Privacy" title="Your data">
         <EmptyState>
-          Export or permanently delete your data at any time. Self-serve tools arrive in Phase 2.
+          Export or permanently delete your data at any time.{' '}
+          <Link href="/account/data" className="text-text underline underline-offset-4">
+            Manage your data
+          </Link>
         </EmptyState>
       </MeshPanel>
     </DashboardFrame>

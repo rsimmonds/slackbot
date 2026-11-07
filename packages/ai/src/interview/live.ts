@@ -52,11 +52,18 @@ function absorbMessage(spec: AnySpec, state: AnyState, field: string, answer: st
   ].join('\n\n');
 }
 
+/** Background such as scrubbed résumé text, capped so it never crowds out the interview. */
+function contextBlock(state: AnyState): string[] {
+  const ctx = (state as { context?: string }).context?.trim();
+  return ctx ? [`<resume>\n${escape(ctx.slice(0, 12_000))}\n</resume>`] : [];
+}
+
 function askMessage(spec: AnySpec, state: AnyState, field: string, followUp: boolean) {
   const f = fieldOf(spec, field);
   return [
     `<next_field key="${field}" follow_up="${followUp}">${escape(followUp ? f.followUp : f.question)}</next_field>`,
     `<missing>${state.remaining.join(', ')}</missing>`,
+    ...contextBlock(state),
     `<transcript>\n${transcriptFor(state)}\n</transcript>`,
     `Question ${state.questionIndex + 1} of ${spec.maxQuestions}. Write only the next question.`,
   ].join('\n\n');

@@ -16,11 +16,14 @@ import {
   type SessionKind,
   type SessionRecord,
 } from '@cmobeat/ai/interview';
+import { interviewSessions } from '@cmobeat/db';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Viewer } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
 import { employerCompany } from '@/lib/jobs/posting';
 import { completeMandateSession } from '@/lib/mandates/complete';
+import { interviewContextFor } from '@/lib/profile/profile';
 
 export { SessionError };
 
@@ -87,6 +90,11 @@ export async function startSession(viewer: Viewer | null, kind: SessionKind): Pr
     throw new SessionError('Profile sessions are for candidates.', 403);
   }
   const state = initialState(spec);
+  // Profile interviews may read the candidate's scrubbed résumé text (kept encrypted in state).
+  if (kind === 'profile') {
+    const context = await interviewContextFor(viewer);
+    if (context) state.context = context;
+  }
   await drain(openingTurn(spec, state, driverFor()));
   const rec = await asViewer(viewer, (tx) =>
     createSession(tx, spec, { ownerId: viewer.id, companyId, state }),
@@ -189,5 +197,20 @@ export async function completeSession(
       409,
     );
   if (rec.kind === 'mandate') return completeMandateSession(viewer, rec, spec);
+  if (rec.kind === 'profile') return completeProfileSession(viewer, rec);
   throw new SessionError(`Completing ${rec.kind} sessions is not available yet.`, 400);
+}
+
+/**
+ * A finished profile interview produces nothing on its own: the candidate reviews and approves
+ * every line first (lib/profile/review.ts). Here we only close the session.
+ */
+async function completeProfileSession(viewer: Viewer, rec: { id: string }) {
+  await asViewer(viewer, (tx) =>
+    tx
+      .update(interviewSessions)
+      .set({ status: 'complete', completedAt: new Date() })
+      .where(eq(interviewSessions.id, rec.id)),
+  );
+  return { redirect: `/me/profile/review?session=${rec.id}` };
 }

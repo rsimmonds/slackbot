@@ -1,5 +1,6 @@
 import type { AnySpec } from './engine';
 import { mandateSpec } from './specs/mandate';
+import { profileInterview } from './specs/profile';
 import type { SessionKind } from './types';
 
 /**
@@ -8,6 +9,7 @@ import type { SessionKind } from './types';
  */
 const specs: Partial<Record<SessionKind, AnySpec>> = {
   mandate: mandateSpec,
+  profile: profileInterview as unknown as AnySpec,
 };
 
 export function specFor(kind: SessionKind): AnySpec | null {

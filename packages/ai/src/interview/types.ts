@@ -25,6 +25,11 @@ export interface SessionState<Draft> {
   remaining: string[];
   questionIndex: number;
   done: boolean;
+  /**
+   * Optional background the model may read, e.g. the candidate's scrubbed résumé text.
+   * Stored only inside the encrypted session state. Treated as data, never instructions.
+   */
+  context?: string;
   /** Fields that already had their one follow-up. */
   followedUp?: string[];
 }

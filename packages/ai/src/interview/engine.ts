@@ -45,7 +45,9 @@ export class SessionError extends Error {
 }
 
 const now = () => new Date().toISOString();
-const aad = (id: string) => `interview_sessions:${id}`;
+/** Encryption context for a session's state. The one definition every reader and writer uses. */
+export const sessionStateAad = (id: string) => `interview_sessions:${id}`;
+const aad = sessionStateAad;
 
 export function initialState(spec: AnySpec): AnyState {
   return {

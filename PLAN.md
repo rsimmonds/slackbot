@@ -2,7 +2,7 @@
 
 An AI-native publication and hiring platform for CMOs. This plan covers the file tree, data model, agents and phase checklist, plus the decisions that need approval before application code starts.
 
-Status: **Phases 0 and 1 complete (2026-11-07). Awaiting approval for Phase 2.**
+Status: **Phases 0–2 complete (2026-11-07).**
 
 ---
 
@@ -168,10 +168,10 @@ Each phase ends with a deployable app, a `CHANGELOG.md` entry, and a checkpoint 
 - **Done when:** Playwright covers editor publishing a move and article, reader subscribing, employer paying for and publishing a parsed listing.
 
 ### Phase 2: AI layer
-- [ ] Session View with streaming, Iris states, save/resume
-- [ ] Mandate Builder + PDF export
-- [ ] Profile Interviewer, visibility controls, blocklist, data export, delete
-- [ ] Sponsorship placements
+- [x] Session View with streaming, Iris states, save/resume
+- [x] Mandate Builder + PDF export
+- [x] Profile Interviewer, visibility controls, blocklist, data export, delete
+- [x] Sponsorship placements
 - **Done when:** employer completes and exports a mandate; candidate completes a profile, sets hidden, and tests show no other role can see it.
 
 ### Phase 3: Matching

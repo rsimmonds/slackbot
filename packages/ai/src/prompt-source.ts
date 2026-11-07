@@ -5,7 +5,12 @@ import { fileURLToPath } from 'node:url';
 /** Build-time only (scripts and tests). Runtime code reads prompts.generated.ts. */
 export const agentsDir = join(dirname(fileURLToPath(import.meta.url)), '../../../agents');
 
-export const promptFiles = ['listing-parser', 'moves-tracker', 'mandate-builder'] as const;
+export const promptFiles = [
+  'listing-parser',
+  'moves-tracker',
+  'mandate-builder',
+  'profile-interviewer',
+] as const;
 
 export function readPromptSources(): Record<string, string> {
   const files: Record<string, string> = {

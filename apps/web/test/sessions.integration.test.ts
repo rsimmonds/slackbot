@@ -114,7 +114,9 @@ describe('sessions API', () => {
   it('enforces roles and registered kinds', async () => {
     signInAs('candidate');
     expect((await start('mandate')).res.status).toBe(403);
-    expect((await start('profile')).res.status).toBe(400); // not registered until the profile spec lands
+    expect((await start('profile')).res.status).toBe(201);
+    signInAs('employer');
+    expect((await start('profile')).res.status).toBe(403);
     signInAs('reader');
     expect((await start('mandate')).res.status).toBe(403);
     signInAs(null);

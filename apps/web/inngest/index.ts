@@ -1,4 +1,5 @@
 import type { InngestFunction } from 'inngest';
+import { dataDeletions, dataExports, profileRetention } from './data-rights';
 import { listingExpiry, savedSearchAlerts } from './jobs';
 import { movesSweep } from './moves-sweep';
 
@@ -9,4 +10,8 @@ export const functions: InngestFunction.Any[] = [
   // Job board
   savedSearchAlerts,
   listingExpiry,
+  // Data rights (profile workstream)
+  dataExports,
+  dataDeletions,
+  profileRetention,
 ];

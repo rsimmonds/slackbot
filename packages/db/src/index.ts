@@ -5,6 +5,7 @@ export { audit, type AuditEntry } from './audit';
 export {
   encryptField,
   decryptField,
+  decryptFieldToBuffer,
   encryptJson,
   decryptJson,
   LocalKeyProvider,

@@ -28,6 +28,11 @@ Status key: **Open** (not yet reviewed), **In review**, **Decided** (with date a
 | P7 | **Privacy policy, terms, subprocessor list, records of processing.** Drafts to be produced before Phase 1 launch. | Legal pages | Open |
 | P9 | **Anthropic as subprocessor** for job descriptions and public news text sent to the Listing Parser and Moves Tracker. Add to the subprocessor list. | AI agents | Open |
 | P10 | **Rate-limit IP hashing.** IPs are salted-hashed and kept in memory only, never stored. Confirm no notice is needed. | Newsletter signup | Open |
+| P11 | **Deletion and the audit log.** The audit log is append-only by design. After an account is deleted, its entries keep a user ID that no longer resolves to anyone. Confirm this counts as anonymized under GDPR Art. 17. | Data rights, audit log | Open |
+| P12 | **Deletion timing.** Deletion takes effect immediately (profile anonymized and hidden), with a 7-day cancellable grace period before permanent deletion, well within 30 days. Export archives are kept 30 days. Confirm both periods. | `/account/data` | Open |
+| P13 | **Résumé text sent to Anthropic.** After contact details and protected attributes are scrubbed, résumé text is given to the Profile Interviewer as background. Confirm notice and lawful basis (see P9). | Profile interview | Open |
+| P14 | **Comp benchmark disclosure.** The Mandate Builder shows employers aggregate comp (p25, median, p75, minimum 5 listings) drawn from other employers' live and expired listings. Confirm this is acceptable. | Mandate Builder | Open |
+| P15 | **One cookie banner for all markets.** The same banner is shown everywhere and Global Privacy Control counts as a decline. Confirm this meets ePrivacy, PECR and Québec Law 25. | Cookie consent | Open |
 | P8 | **Quebec Law 25** if Quebec residents are in scope (privacy impact assessments for transfers outside Quebec). | Canada | Open |
 
 ## Publishing
@@ -51,4 +56,6 @@ Status key: **Open** (not yet reviewed), **In review**, **Decided** (with date a
 | C3 | **Sales tax / VAT** on job posts and subscriptions across markets. Stripe automatic tax is **off** in Phase 1. | Billing, Stripe Checkout | Open |
 | C4 | **Postal address in email footers** (CAN-SPAM, CASL). `COMPANY_POSTAL_ADDRESS` must be a real address before any email is sent. | All email | Open |
 | C5 | **Newsletter consent wording.** Review the exact text stored with each signup (`apps/web/lib/newsletter/service.ts`). | Newsletter | Open |
+| C7 | **Draft legal pages.** Privacy, terms, cookies, subprocessors and the AI notice are drafts. Each "For counsel:" marker needs a decision: legal entity, lawful bases, transfers, retention, liability, governing law, review contact. Subprocessor regions are assumed. | `/legal/*` | Open |
+| C8 | **Sponsored content disclosure.** Confirm the "Sponsored" label and placement meet FTC, ASA and Competition Bureau rules. | Sponsorships | Open |
 | C6 | **Job board vs agency.** Confirm that listing paid job posts (as distinct from paid search, H4) needs no licence in any launch market. | Job board | Open |

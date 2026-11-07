@@ -775,7 +775,12 @@ export const sourceItems = pgTable(
 
 // ---------------------------------------------------------------- Phase 2
 
-export const filePurposeEnum = pgEnum('file_purpose', ['resume', 'linkedin_pdf', 'media']);
+export const filePurposeEnum = pgEnum('file_purpose', [
+  'resume',
+  'linkedin_pdf',
+  'media',
+  'data_export',
+]);
 
 /**
  * Encrypted uploads. The local provider stores the encrypted bytes here; the Supabase Storage

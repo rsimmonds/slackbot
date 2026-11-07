@@ -16,6 +16,7 @@ export {
   openingTurn,
   planNext,
   saveSession,
+  sessionStateAad,
   SessionError,
   type Absorbed,
   type AnySpec,
