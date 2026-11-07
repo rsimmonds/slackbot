@@ -9,7 +9,7 @@ import {
 } from '@cmobeat/db';
 import { latestEmailTo } from '@cmobeat/email';
 import { buildFakeEvent, fakePaymentsSecret } from '@cmobeat/payments';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, like } from 'drizzle-orm';
 import { GET as searchRoute, POST as createRoute } from '@/app/api/listings/route';
 import { POST as parseRoute } from '@/app/api/listings/parse/route';
 import { PATCH as patchRoute } from '@/app/api/listings/[id]/route';
@@ -325,7 +325,11 @@ describe('post a job: parse → confirm → pay → review → live', () => {
     const l = await listing(listingId);
     expect(l).toMatchObject({ status: 'pending_review', plan: 'featured' });
     expect(
-      await adminDb().select().from(payments).where(eq(payments.companyId, l.companyId!)),
+      // Job-post payments only: other suites invoice this company for searches.
+      await adminDb()
+        .select()
+        .from(payments)
+        .where(and(eq(payments.companyId, l.companyId!), like(payments.product, 'job_post%'))),
     ).toHaveLength(1);
   });
 

@@ -75,7 +75,14 @@ export async function matchFor(
   const [profile] = await db
     .select({ id: candidateProfiles.id, userId: candidateProfiles.userId })
     .from(candidateProfiles)
-    .where(and(ne(candidateProfiles.visibility, 'hidden'), isNotNull(candidateProfiles.headline)))
+    .where(
+      and(
+        ne(candidateProfiles.visibility, 'hidden'),
+        isNotNull(candidateProfiles.headline),
+        // One match per mandate and profile: skip profiles other suites already matched here.
+        sql`not exists (select 1 from matches m where m.mandate_id = ${mandateId} and m.profile_id = ${candidateProfiles.id})`,
+      ),
+    )
     .orderBy(sql`random()`)
     .limit(1);
   const status = opts.status ?? 'revealed';

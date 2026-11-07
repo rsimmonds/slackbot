@@ -9,6 +9,7 @@ import { isEditorial } from '@/lib/editorial/access';
 import { articleCounts } from '@/lib/editorial/articles';
 import { moveCounts } from '@/lib/editorial/moves';
 import { formatCost, openQueue, summaryByAgent } from '@/lib/agents/monitoring';
+import { proposedCount } from '@/lib/matches/review';
 
 export const metadata = { title: 'Staff console' };
 
@@ -22,6 +23,7 @@ export default async function ConsoleHome() {
         .length
     : 0;
   const isTalent = viewer.roles.includes('talent_partner') || viewer.roles.includes('admin');
+  const matchesWaiting = isTalent ? await proposedCount(viewer) : 0;
   const [moves, articles] = isEditor
     ? await Promise.all([moveCounts(viewer), articleCounts(viewer)])
     : [null, null];
@@ -87,12 +89,25 @@ export default async function ConsoleHome() {
         <MeshPanel
           className="col-span-12 lg:col-span-6"
           eyebrow="Matching"
-          title="Match review"
-          actions={<Status>Phase 3</Status>}
+          title={
+            matchesWaiting
+              ? `${matchesWaiting} match${matchesWaiting === 1 ? '' : 'es'} awaiting review`
+              : 'No matches waiting'
+          }
+          actions={
+            <Status tone={matchesWaiting ? 'machine' : 'neutral'}>
+              {matchesWaiting ? 'Proposed by AI' : 'Clear'}
+            </Status>
+          }
         >
-          <EmptyState>
+          <p className="text-small text-text-2">
             Every proposed match, its rationale and audit trail. You approve, edit or reject.
-          </EmptyState>
+          </p>
+          <div className="mt-6">
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/console/matches">Open match review</Link>
+            </Button>
+          </div>
         </MeshPanel>
       ) : null}
       {runsSearches ? (
