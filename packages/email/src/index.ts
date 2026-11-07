@@ -32,6 +32,12 @@ export {
 } from './templates/Layout';
 export { newsletterConfirmEmail, newsletterWelcomeEmail } from './templates/newsletter';
 export {
+  SponsorshipBlock,
+  sponsorshipText,
+  type SponsorshipCreative,
+} from './templates/Sponsorship';
+export { activeSponsorship, type SponsorshipPlacement } from './sponsorship';
+export {
   newsletterProvider,
   OutboxNewsletterProvider,
   ResendNewsletterProvider,

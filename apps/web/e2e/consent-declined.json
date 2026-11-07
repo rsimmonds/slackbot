@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "cmob_consent",
+      "value": "v1.a0.1794000000",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1950000000,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

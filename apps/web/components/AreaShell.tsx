@@ -3,7 +3,9 @@ import { MonoLabel } from '@cmobeat/ui';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { Area } from '@/lib/areas';
+import { getConsent } from '@/lib/consent/server';
 import { resolveTheme } from '@/lib/theme';
+import { CookieBanner } from './legal/CookieBanner';
 import { CommandMenu, type NavCommand } from './CommandMenu';
 import { MobileNav } from './MobileNav';
 import { SignOutButton } from './SignOutButton';
@@ -168,11 +170,29 @@ export async function AreaShell({
               llms.txt
             </a>
           </nav>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/legal/privacy" className="label-mono hover:text-text">
+              Privacy
+            </Link>
+            <Link href="/legal/terms" className="label-mono hover:text-text">
+              Terms
+            </Link>
+            <Link href="/legal/ai" className="label-mono hover:text-text">
+              How we use AI
+            </Link>
+            <Link href="/legal/subprocessors" className="label-mono hover:text-text">
+              Subprocessors
+            </Link>
+            <Link href="/legal/cookies" className="label-mono hover:text-text">
+              Cookie settings
+            </Link>
+          </nav>
           <MonoLabel>Sample data only. All companies and people are fictional.</MonoLabel>
           <span className="sm:hidden">
             <ThemeControl value={preference} />
           </span>
         </div>
+        <CookieBanner decided={(await getConsent()).decided} />
       </footer>
     </div>
   );

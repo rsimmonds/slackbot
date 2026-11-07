@@ -8,6 +8,7 @@ import { InterviewMedia } from './InterviewMedia';
 import { JsonLd } from './JsonLd';
 import { ReadingProgress } from './ReadingProgress';
 import { RoleCard } from './RoleCard';
+import { SponsorSlot } from '../sponsorships/SponsorSlot';
 
 const kicker = { story: 'Story', interview: brand.interviewSeries, report: 'Report' } as const;
 
@@ -127,6 +128,8 @@ export function ArticleView({
           </div>
         </div>
       </article>
+
+      <SponsorSlot placement="article_foot" className="mt-24 max-w-[68ch]" />
 
       {roles.length ? (
         <section aria-labelledby="related-roles" className="mt-24 border-t border-line pt-10">

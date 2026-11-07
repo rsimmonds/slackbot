@@ -1,6 +1,7 @@
 import { brand } from '@cmobeat/config';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { AnalyticsGate, AnalyticsLoader } from '@/components/legal/AnalyticsGate';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -31,6 +32,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <Providers>{children}</Providers>
+        <AnalyticsGate>
+          <AnalyticsLoader />
+        </AnalyticsGate>
       </body>
     </html>
   );

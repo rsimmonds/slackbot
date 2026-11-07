@@ -7,6 +7,7 @@ import { requireArea } from '@/lib/auth';
 import { isEditorial } from '@/lib/editorial/access';
 import { articleCounts } from '@/lib/editorial/articles';
 import { moveCounts } from '@/lib/editorial/moves';
+import { formatCost, openQueue, summaryByAgent } from '@/lib/agents/monitoring';
 
 export const metadata = { title: 'Staff console' };
 
@@ -19,6 +20,12 @@ export default async function ConsoleHome() {
     ? await Promise.all([moveCounts(viewer), articleCounts(viewer)])
     : [null, null];
   const waiting = (moves?.drafts ?? 0) + (articles?.inReview ?? 0);
+  const [agentSummary, agentQueue] = await Promise.all([
+    summaryByAgent(viewer, 1),
+    openQueue(viewer),
+  ]);
+  const runsToday = agentSummary.reduce((s, a) => s + a.runs, 0);
+  const costToday = agentSummary.reduce((s, a) => s + a.costMicros, 0);
 
   return (
     <DashboardFrame
@@ -94,8 +101,21 @@ export default async function ConsoleHome() {
       >
         <EmptyState>Paid job posts wait here until a person approves them.</EmptyState>
       </MeshPanel>
-      <MeshPanel className="col-span-12" eyebrow="Agents" title="Monitoring">
-        <EmptyState>Run logs, cost, eval scores and fairness reports per agent.</EmptyState>
+      <MeshPanel
+        className="col-span-12"
+        eyebrow="Agents"
+        title={`${runsToday} runs in the last 24 hours · ${formatCost(costToday)}`}
+        actions={
+          <Link href="/console/agents" className="text-small text-text-2 hover:text-text">
+            Open monitoring
+          </Link>
+        }
+      >
+        <EmptyState>
+          {agentQueue.length
+            ? `${agentQueue.length} item${agentQueue.length === 1 ? '' : 's'} waiting for a person. Run logs, cost and eval results are in monitoring.`
+            : 'Nothing waiting for a person. Run logs, cost and eval results are in monitoring.'}
+        </EmptyState>
       </MeshPanel>
     </DashboardFrame>
   );
