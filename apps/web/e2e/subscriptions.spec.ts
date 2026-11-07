@@ -62,8 +62,15 @@ async function endFromPortal(page: Page, from: string) {
   if (!(await manage.isVisible())) return;
   await manage.click();
   await page.waitForURL(/\/billing\/portal\/fake/);
-  await page.getByRole('button', { name: 'End now' }).click();
-  await expect(page.getByText('Ended', { exact: true })).toBeVisible();
+  const endNow = page.getByRole('button', { name: 'End now' });
+  if (await endNow.isVisible()) {
+    await endNow.click();
+    await expect(page.getByText('Ended', { exact: true })).toBeVisible();
+    return;
+  }
+  // A subscription another suite wrote straight to the database has no test-portal record:
+  // remove it the same way, so this test starts from the unsubscribed state.
+  await db((sql) => sql`delete from subscriptions where stripe_subscription_id like 'sub_e2e_%'`);
 }
 
 test('an employer subscribes, posts under the plan, and a teammate joins', async ({

@@ -57,6 +57,8 @@ async function expectAccessible(page: Page) {
 
 test.describe('data API (subscription state is shared, so run once, in order)', () => {
   test.describe.configure({ mode: 'serial' });
+  // Leave the shared employer without the subscription this file created.
+  test.afterAll(async () => setSubscription(false));
   test.skip(({ isMobile }) => isMobile, 'changes the shared subscription; desktop only');
 
   test('without a subscription, no key can be created', async ({ page }) => {

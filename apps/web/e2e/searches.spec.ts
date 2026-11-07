@@ -59,6 +59,8 @@ async function revealedMatch(mandateId: string) {
     const [p] = await sql<{ id: string; user_id: string }[]>`
       select id, user_id from candidate_profiles
       where visibility <> 'hidden' and headline is not null and deleted_at is null
+        -- One match per mandate and profile: skip anyone matching already proposed here.
+        and not exists (select 1 from matches m where m.mandate_id = ${mandateId} and m.profile_id = candidate_profiles.id)
       order by random() limit 1`;
     const [talent] = await sql<
       { id: string }[]

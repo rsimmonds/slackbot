@@ -67,9 +67,26 @@ export default defineConfig({
     // compliance.spec.ts clears this to test the banner itself.
     storageState: './e2e/consent-declined.json',
   },
+  // subscriptions.spec and data-api.spec both change the sample employer's subscription, so they
+  // run one after the other in their own projects instead of in parallel with each other.
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: ['**/subscriptions.spec.ts', '**/data-api.spec.ts'],
+    },
+    {
+      name: 'billing-subscriptions',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/subscriptions.spec.ts',
+    },
+    {
+      name: 'billing-data-api',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/data-api.spec.ts',
+      dependencies: ['billing-subscriptions'],
+    },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: '**/data-api.spec.ts' },
   ],
   webServer: {
     command: `pnpm exec next start --port ${port}`,
