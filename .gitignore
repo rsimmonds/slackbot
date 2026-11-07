@@ -45,3 +45,6 @@ test-results
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Claude Code agent worktrees (local only)
+.claude/worktrees/
