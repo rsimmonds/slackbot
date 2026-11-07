@@ -47,19 +47,20 @@ const s = StyleSheet.create({
     paddingBottom: 72,
     fontFamily: 'Geist',
     fontSize: 10,
-    lineHeight: 1.5,
+    // No page-level lineHeight: react-pdf drops fixed, absolutely positioned footers on pages that
+    // set it. Line height lives on the text styles instead.
     color: c.text,
   },
   label: { fontSize: 7.5, letterSpacing: 1.2, textTransform: 'uppercase', color: c.text3 },
   h1: { fontFamily: 'Instrument Serif', fontSize: 30, lineHeight: 1.1, marginTop: 8 },
-  lede: { fontSize: 10.5, color: c.text2, marginTop: 6 },
+  lede: { fontSize: 10.5, lineHeight: 1.5, color: c.text2, marginTop: 6 },
   h2: { fontFamily: 'Instrument Serif', fontSize: 17, marginBottom: 8 },
   section: { marginTop: 22, paddingTop: 14, borderTopWidth: 0.5, borderTopColor: c.line },
   row: { flexDirection: 'row', gap: 16 },
   cell: { flex: 1 },
   item: { flexDirection: 'row', marginBottom: 4 },
   dash: { width: 12, color: c.text3 },
-  body: { color: c.text2 },
+  body: { color: c.text2, lineHeight: 1.5 },
   num: { fontSize: 13 },
   tableRow: {
     flexDirection: 'row',

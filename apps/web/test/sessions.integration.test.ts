@@ -303,6 +303,8 @@ describe('sessions API', () => {
     const flat = String(text).replace(/\s+/g, '');
     expect(flat).toContain('ChiefMarketingOfficer');
     expect(flat).toContain('Confidential—preparedwithCMOBeat');
+    // The fixed footer carries page numbers; it only renders without a page-level lineHeight.
+    expect(flat).toMatch(/1\/\d+/);
     expect(flat).toContain('90-dayscorecard');
 
     signInAs('admin');

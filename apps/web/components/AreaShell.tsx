@@ -103,6 +103,8 @@ export async function AreaShell({
   children: ReactNode;
 }) {
   const { theme, preference } = await resolveTheme(area);
+  // Areas with many links (the staff console) use the menu button until there is room inline.
+  const dense = nav.length > 6;
   return (
     <div data-theme={theme} data-area={area} className="grain relative min-h-dvh overflow-x-clip">
       <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
@@ -111,8 +113,17 @@ export async function AreaShell({
       <header className="sticky top-0 z-40 border-b border-line bg-[var(--glass)] backdrop-blur-[20px]">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-4 md:gap-6 md:px-8">
           <Wordmark />
-          <MonoLabel className="hidden md:inline">{areaLabel[area]}</MonoLabel>
-          <nav aria-label={areaLabel[area]} className="ml-auto hidden items-center gap-6 md:flex">
+          <MonoLabel className={dense ? 'hidden 2xl:inline' : 'hidden md:inline'}>
+            {areaLabel[area]}
+          </MonoLabel>
+          <nav
+            aria-label={areaLabel[area]}
+            className={
+              dense
+                ? 'ml-auto hidden items-center gap-5 xl:flex'
+                : 'ml-auto hidden items-center gap-6 md:flex'
+            }
+          >
             {nav.map((l) => (
               <Link
                 key={l.href}
@@ -123,8 +134,14 @@ export async function AreaShell({
               </Link>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-3 md:ml-0">
-            <MobileNav nav={nav} label={areaLabel[area]} />
+          <div
+            className={
+              dense
+                ? 'ml-auto flex items-center gap-3 xl:ml-0'
+                : 'ml-auto flex items-center gap-3 md:ml-0'
+            }
+          >
+            <MobileNav nav={nav} label={areaLabel[area]} dense={dense} />
             <kbd className="label-mono hidden rounded-control border border-line px-1.5 py-0.5 lg:inline">
               ⌘K
             </kbd>
@@ -133,7 +150,13 @@ export async function AreaShell({
             </span>
             {viewer ? (
               <div className="flex items-center gap-3">
-                <span className="hidden flex-col text-right leading-tight sm:flex">
+                <span
+                  className={
+                    dense
+                      ? 'hidden flex-col text-right leading-tight 2xl:flex'
+                      : 'hidden flex-col text-right leading-tight sm:flex'
+                  }
+                >
                   <span className="text-micro text-text">{viewer.name}</span>
                   <span className="label-mono text-[10px]">
                     {viewer.roles.map((r) => roleLabel[r]).join(' · ')}
