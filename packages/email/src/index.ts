@@ -19,3 +19,22 @@ export interface OutgoingEmail {
 }
 
 export { sendEmail, latestEmailTo } from './send';
+export { emailConfig, type EmailConfig } from './config';
+export { renderEmail } from './render';
+export {
+  EmailButton,
+  EmailHeading,
+  EmailLayout,
+  EmailRule,
+  EmailText,
+  emailTokens,
+  type EmailLayoutProps,
+} from './templates/Layout';
+export { newsletterConfirmEmail, newsletterWelcomeEmail } from './templates/newsletter';
+export {
+  newsletterProvider,
+  OutboxNewsletterProvider,
+  ResendNewsletterProvider,
+  type NewsletterIssue,
+  type NewsletterProvider,
+} from './newsletter';

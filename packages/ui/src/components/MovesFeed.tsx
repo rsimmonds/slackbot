@@ -24,9 +24,11 @@ const typeInk: Record<MoveType, string> = {
   promoted: 'text-text',
 };
 
-const stamp = (d: string | Date) => {
+const stamp = (d: string | Date, precision: 'minute' | 'day') => {
   const date = typeof d === 'string' ? new Date(d) : d;
-  return date.toISOString().slice(0, 16).replace('T', ' ');
+  return precision === 'day'
+    ? date.toISOString().slice(0, 10)
+    : date.toISOString().slice(0, 16).replace('T', ' ');
 };
 
 /** A live, timestamped monospace log of CMO appointments and departures. */
@@ -34,11 +36,14 @@ export function MovesFeed({
   moves,
   live = true,
   title = 'CMO Moves',
+  precision = 'minute',
   className,
 }: {
   moves: MoveItem[];
   live?: boolean;
   title?: string;
+  /** "day" for date-only events such as effective dates, so no fake 00:00 time is shown. */
+  precision?: 'minute' | 'day';
   className?: string;
 }) {
   return (
@@ -55,7 +60,7 @@ export function MovesFeed({
             const body = (
               <>
                 <time dateTime={new Date(m.at).toISOString()} className="shrink-0 text-text-3">
-                  {stamp(m.at)}
+                  {stamp(m.at, precision)}
                 </time>
                 <span className={cn('w-20 shrink-0 uppercase tracking-[0.12em]', typeInk[m.type])}>
                   {typeLabel[m.type]}

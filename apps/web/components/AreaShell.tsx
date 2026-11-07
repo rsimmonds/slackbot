@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { Area } from '@/lib/areas';
 import { resolveTheme } from '@/lib/theme';
 import { CommandMenu, type NavCommand } from './CommandMenu';
+import { MobileNav } from './MobileNav';
 import { SignOutButton } from './SignOutButton';
 import { ThemeControl } from './ThemeControl';
 import { Wordmark } from './Wordmark';
@@ -31,8 +32,42 @@ const roleLabel: Record<Role, string> = {
   admin: 'Admin',
 };
 
+const publicationCommands: NavCommand[] = [
+  { id: 'home', label: 'Home', group: 'Publication', href: '/' },
+  { id: 'jobs', label: 'Jobs', group: 'Publication', href: '/jobs' },
+  {
+    id: 'moves',
+    label: 'CMO Moves',
+    group: 'Publication',
+    href: '/moves',
+    keywords: ['appointments', 'departures'],
+  },
+  { id: 'articles', label: 'Stories', group: 'Publication', href: '/articles' },
+  {
+    id: 'interviews',
+    label: 'Interviews',
+    group: 'Publication',
+    href: '/interviews',
+    keywords: ['mandate'],
+  },
+  {
+    id: 'data',
+    label: 'Data',
+    group: 'Publication',
+    href: '/data',
+    keywords: ['comp', 'tenure', 'charts'],
+  },
+  {
+    id: 'newsletter',
+    label: 'Newsletter',
+    group: 'Publication',
+    href: '/newsletter',
+    keywords: ['subscribe'],
+  },
+];
+
 function commandsFor(roles: readonly Role[] | undefined): NavCommand[] {
-  const items: NavCommand[] = [{ id: 'home', label: 'Home', group: 'Publication', href: '/' }];
+  const items: NavCommand[] = [...publicationCommands];
   if (!roles)
     return [...items, { id: 'signin', label: 'Sign in', group: 'Account', href: '/sign-in' }];
   items.push({ id: 'account', label: 'Account', group: 'Account', href: '/account' });
@@ -87,6 +122,7 @@ export async function AreaShell({
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 md:ml-0">
+            <MobileNav nav={nav} label={areaLabel[area]} />
             <kbd className="label-mono hidden rounded-control border border-line px-1.5 py-0.5 lg:inline">
               ⌘K
             </kbd>
@@ -118,6 +154,20 @@ export async function AreaShell({
           <MonoLabel>
             {brand.name} · {new Date().getFullYear()}
           </MonoLabel>
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/newsletter" className="label-mono hover:text-text">
+              Newsletter
+            </Link>
+            <Link href="/newsletter/archive" className="label-mono hover:text-text">
+              Archive
+            </Link>
+            <a href="/feed.xml" className="label-mono hover:text-text">
+              RSS
+            </a>
+            <a href="/llms.txt" className="label-mono hover:text-text">
+              llms.txt
+            </a>
+          </nav>
           <MonoLabel>Sample data only. All companies and people are fictional.</MonoLabel>
           <span className="sm:hidden">
             <ThemeControl value={preference} />
