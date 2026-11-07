@@ -68,7 +68,10 @@ function metricFrom(sentence: string, value: string): string {
     .replace(new RegExp(`(?:\\b(?:from|by|of)\\s+)?${escapeRe(value)}`, 'i'), '')
     .replace(/\bfrom\s+[$€£]?\d[\d,.%x ]*\s+to\s+[$€£]?\d[\d,.%x ]*/i, '')
     .replace(TIMEFRAME, '')
-    .replace(/\b(i|we|my team|our team)\s+(grew|took|cut|raised|increased|reduced|lifted|moved|drove|improved|doubled|tripled|built)\b/i, '$2')
+    .replace(
+      /\b(i|we|my team|our team)\s+(grew|took|cut|raised|increased|reduced|lifted|moved|drove|improved|doubled|tripled|built)\b/i,
+      '$2',
+    )
     .replace(/\s{2,}/g, ' ')
     .replace(/\b(from|by|to|of)\s*$/i, '')
     .replace(/^[\s,;:-]+|[\s,;:.-]+$/g, '');
@@ -91,7 +94,10 @@ const LEVELS: { level: Level; pattern: RegExp }[] = [
   { level: 'fractional_cmo', pattern: /\bfractional\b/i },
   { level: 'chief_growth_officer', pattern: /chief growth officer|\bcgo\b/i },
   { level: 'cmo', pattern: /chief marketing officer|\bcmo\b|chief (brand|customer) officer/i },
-  { level: 'vp_marketing', pattern: /\b(vp|vice president|head of|svp|evp)\b[^.]{0,20}(marketing|growth|brand|demand)/i },
+  {
+    level: 'vp_marketing',
+    pattern: /\b(vp|vice president|head of|svp|evp)\b[^.]{0,20}(marketing|growth|brand|demand)/i,
+  },
 ];
 
 export function extractLevel(text: string): Level | null {
@@ -158,13 +164,15 @@ export function extractMarkets(text: string): Ideal['markets'] {
   if (/\b(canada|canadian|toronto|vancouver|montr[eé]al)\b/.test(t)) out.push('CA');
   if (/\b(eu|europe|european|berlin|paris|amsterdam|stockholm|madrid)\b/.test(t)) out.push('EU');
   if (/\b(uk|united kingdom|britain|london|england|scotland)\b/.test(t)) out.push('UK');
-  if (/\b(anywhere|global|everywhere|all (four|markets))\b/.test(t)) return ['US', 'CA', 'EU', 'UK'];
+  if (/\b(anywhere|global|everywhere|all (four|markets))\b/.test(t))
+    return ['US', 'CA', 'EU', 'UK'];
   return out;
 }
 
 export function extractReportingLine(text: string): string | null {
   const t = text.toLowerCase();
-  if (/\bceo\b|chief executive|founder/.test(t)) return /founder/.test(t) && !/\bceo\b/.test(t) ? 'Founder' : 'CEO';
+  if (/\bceo\b|chief executive|founder/.test(t))
+    return /founder/.test(t) && !/\bceo\b/.test(t) ? 'Founder' : 'CEO';
   if (/\bboard\b/.test(t)) return 'Board';
   if (/\bcoo\b|chief operating/.test(t)) return 'COO';
   if (/\bcro\b|chief revenue/.test(t)) return 'CRO';
@@ -176,7 +184,12 @@ export function extractReportingLine(text: string): string | null {
 export function listItems(text: string, max = 5): string[] {
   return text
     .split(/\n|;|•|(?:,\s*(?:and\s+)?)|(?:\s+and\s+(?=[a-z]))/i)
-    .map((s) => s.replace(/^[-*\d.)\s]+/, '').replace(/[.\s]+$/, '').trim())
+    .map((s) =>
+      s
+        .replace(/^[-*\d.)\s]+/, '')
+        .replace(/[.\s]+$/, '')
+        .trim(),
+    )
     .filter((s) => words(s) >= 2)
     .slice(0, max);
 }
@@ -188,12 +201,15 @@ function outcomeFrom(answer: string, type: Outcome['outcomeType']): Outcome | nu
   const value = extractValue(withNumber)!;
   const timeframe = answer.match(TIMEFRAME)?.[0] ?? null;
   const rest = sentences.filter((s) => s !== withNumber).join(' ');
-  const evidence = answer.match(/\b(board (deck|pack|report)|audited|annual report|10-?k|crm|salesforce|hubspot|dashboard|investor update)\b[^.]*/i);
+  const evidence = answer.match(
+    /\b(board (deck|pack|report)|audited|annual report|10-?k|crm|salesforce|hubspot|dashboard|investor update)\b[^.]*/i,
+  );
   return {
     outcomeType: type,
     metric: withoutEmployerNames(metricFrom(withNumber, value)),
     value,
-    context: [timeframe, withoutEmployerNames(rest).slice(0, 200)].filter(Boolean).join('. ') || null,
+    context:
+      [timeframe, withoutEmployerNames(rest).slice(0, 200)].filter(Boolean).join('. ') || null,
     evidenceNote: evidence ? evidence[0].trim().slice(0, 120) : null,
   };
 }
@@ -251,7 +267,8 @@ export const profileFields: FieldSpec<ProfileDraft>[] = [
     key: 'role',
     question:
       'Let’s start with where you are now. What is your current or most recent role, and how many years have you led marketing?',
-    followUp: 'Could you give me the title, and roughly how many years you have led marketing teams?',
+    followUp:
+      'Could you give me the title, and roughly how many years you have led marketing teams?',
     extract: scrubbed((a) => {
       const level = extractLevel(a);
       if (!level) return null;
@@ -298,13 +315,16 @@ export const profileFields: FieldSpec<ProfileDraft>[] = [
     key: 'ai_fluency',
     question: 'How do you and your team use AI in marketing today? Be specific about one workflow.',
     followUp: 'Which workflow changed, which tools, and what did it change in time or output?',
-    extract: scrubbed((a) => (isVague(a, 8) ? null : { aiFluency: withoutEmployerNames(a).slice(0, 400) })),
+    extract: scrubbed((a) =>
+      isVague(a, 8) ? null : { aiFluency: withoutEmployerNames(a).slice(0, 400) },
+    ),
     isComplete: (d) => d.aiFluency !== undefined,
   },
   {
     key: 'headline',
     question: 'In one line, how would you describe the leader you are? Leave out employer names.',
-    followUp: 'Try one sentence: the kind of problem you are best at, and the stage where you do it.',
+    followUp:
+      'Try one sentence: the kind of problem you are best at, and the stage where you do it.',
     extract: scrubbed((a) => {
       if (isVague(a, 5)) return null;
       const line = withoutEmployerNames(splitSentences(a)[0] ?? a).replace(/[.\s]+$/, '');
@@ -314,10 +334,13 @@ export const profileFields: FieldSpec<ProfileDraft>[] = [
   },
   {
     key: 'ideal_summary',
-    question: 'Describe the next mandate you want. What problem would you most like to be hired to solve?',
+    question:
+      'Describe the next mandate you want. What problem would you most like to be hired to solve?',
     followUp: 'What would the company need from you in the first year?',
     extract: scrubbed((a, d) =>
-      isVague(a, 8) ? null : { ideal: { ...d.ideal, summary: withoutEmployerNames(a).slice(0, 400) } },
+      isVague(a, 8)
+        ? null
+        : { ideal: { ...d.ideal, summary: withoutEmployerNames(a).slice(0, 400) } },
     ),
     isComplete: (d) => !!d.ideal?.summary,
   },
@@ -361,9 +384,11 @@ export const profileFields: FieldSpec<ProfileDraft>[] = [
   {
     key: 'deal_breakers',
     question: 'Last one. What would make you turn down a role, however good it looks?',
-    followUp: 'Name one or two things, such as no budget authority or no seat at the leadership table.',
+    followUp:
+      'Name one or two things, such as no budget authority or no seat at the leadership table.',
     extract: scrubbed((a, d) => {
-      if (/\b(nothing|none|no deal ?breakers?)\b/i.test(a)) return { ideal: { ...d.ideal, dealBreakers: [] } };
+      if (/\b(nothing|none|no deal ?breakers?)\b/i.test(a))
+        return { ideal: { ...d.ideal, dealBreakers: [] } };
       const items = listItems(withoutEmployerNames(a), 5);
       return items.length ? { ideal: { ...d.ideal, dealBreakers: items } } : null;
     }),
@@ -385,7 +410,12 @@ export function finalizeProfile(d: Partial<ProfileDraft>): ProfilePortfolio {
   const level = d.level ?? 'cmo';
   const outcomes = Object.values(d.outcomesByField ?? {});
   return ProfilePortfolioSchema.parse({
-    headline: d.headline ?? `${levelTitle[level]}. ${outcomes[0]?.metric ?? 'Proof of outcomes on request'}.`.slice(0, 140),
+    headline:
+      d.headline ??
+      `${levelTitle[level]}. ${outcomes[0]?.metric ?? 'Proof of outcomes on request'}.`.slice(
+        0,
+        140,
+      ),
     level,
     yearsExperience: d.yearsExperience ?? null,
     outcomes,
@@ -411,5 +441,6 @@ export const profileInterview: InterviewSpec<ProfileDraft, ProfilePortfolio> = {
   fields: profileFields,
   schema: ProfilePortfolioSchema,
   finalize: finalizeProfile,
-  intro: 'Your answers are encrypted and visible to no one. You approve every line before it is saved.',
+  intro:
+    'Your answers are encrypted and visible to no one. You approve every line before it is saved.',
 };

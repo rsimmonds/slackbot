@@ -1,5 +1,10 @@
 import 'server-only';
-import { finalizeProfile, OutcomeSchema, type ProfileDraft, type ProfilePortfolio } from '@cmobeat/ai';
+import {
+  finalizeProfile,
+  OutcomeSchema,
+  type ProfileDraft,
+  type ProfilePortfolio,
+} from '@cmobeat/ai';
 import { markets } from '@cmobeat/config';
 import {
   audit,
@@ -35,7 +40,11 @@ export const sessionAad = (sessionId: string) => sessionId;
 const levels = ['vp_marketing', 'cmo', 'chief_growth_officer', 'fractional_cmo'] as const;
 
 export type ReviewLine =
-  | { id: 'role'; kind: 'role'; value: { level: (typeof levels)[number]; yearsExperience: number | null } }
+  | {
+      id: 'role';
+      kind: 'role';
+      value: { level: (typeof levels)[number]; yearsExperience: number | null };
+    }
   | { id: 'headline'; kind: 'headline'; value: string }
   | { id: `outcome:${number}`; kind: 'outcome'; value: z.infer<typeof OutcomeSchema> }
   | { id: `team:${number}`; kind: 'team'; value: string }
@@ -54,7 +63,11 @@ export function portfolioLines(p: ProfilePortfolio): ReviewLine[] {
   const lines: ReviewLine[] = [
     { id: 'role', kind: 'role', value: { level: p.level, yearsExperience: p.yearsExperience } },
     { id: 'headline', kind: 'headline', value: p.headline },
-    ...p.outcomes.map((o, i) => ({ id: `outcome:${i}` as const, kind: 'outcome' as const, value: o })),
+    ...p.outcomes.map((o, i) => ({
+      id: `outcome:${i}` as const,
+      kind: 'outcome' as const,
+      value: o,
+    })),
     ...p.teamBuilds.map((t, i) => ({ id: `team:${i}` as const, kind: 'team' as const, value: t })),
   ];
   if (p.aiFluency) lines.push({ id: 'ai', kind: 'ai', value: p.aiFluency });
@@ -62,7 +75,11 @@ export function portfolioLines(p: ProfilePortfolio): ReviewLine[] {
   lines.push(
     { id: 'ideal.summary', kind: 'idealSummary', value: m.summary },
     { id: 'ideal.fit', kind: 'idealFit', value: { stages: m.stages, industries: m.industries } },
-    { id: 'ideal.terms', kind: 'idealTerms', value: { workTypes: m.workTypes, markets: m.markets } },
+    {
+      id: 'ideal.terms',
+      kind: 'idealTerms',
+      value: { workTypes: m.workTypes, markets: m.markets },
+    },
     { id: 'ideal.reporting', kind: 'idealReporting', value: m.reportingLine },
     { id: 'ideal.dealBreakers', kind: 'idealDealBreakers', value: m.dealBreakers },
   );
@@ -99,7 +116,10 @@ export interface ReviewDraft {
  * The candidate's finalized draft, ready for line-by-line review. Only the session owner can read
  * it: the query runs under RLS and the state is decrypted with the session id as AAD.
  */
-export async function getProfileDraftForReview(viewer: Viewer, sessionId: string): Promise<ReviewDraft> {
+export async function getProfileDraftForReview(
+  viewer: Viewer,
+  sessionId: string,
+): Promise<ReviewDraft> {
   requireCandidate(viewer);
   return asViewer(viewer, async (tx) => {
     const s = await loadSession(tx, viewer.id, sessionId);
@@ -126,13 +146,19 @@ export async function getProfileDraftForReview(viewer: Viewer, sessionId: string
 // ---------------------------------------------------------------- save
 
 const editValue: Record<ReviewLine['kind'], z.ZodType> = {
-  role: z.object({ level: z.enum(levels), yearsExperience: z.number().int().min(0).max(60).nullable() }),
+  role: z.object({
+    level: z.enum(levels),
+    yearsExperience: z.number().int().min(0).max(60).nullable(),
+  }),
   headline: z.string().trim().min(10).max(140),
   outcome: OutcomeSchema,
   team: z.string().trim().min(3).max(200),
   ai: z.string().trim().min(3).max(400),
   idealSummary: z.string().trim().min(10).max(400),
-  idealFit: z.object({ stages: z.array(z.string().max(40)).max(4), industries: z.array(z.string().max(40)).max(6) }),
+  idealFit: z.object({
+    stages: z.array(z.string().max(40)).max(4),
+    industries: z.array(z.string().max(40)).max(6),
+  }),
   idealTerms: z.object({
     workTypes: z.array(z.enum(['full_time', 'fractional'])).min(1),
     markets: z.array(z.enum(markets)).min(1),
@@ -170,7 +196,8 @@ export async function savePortfolio(viewer: Viewer, input: Decisions): Promise<S
   const byId = new Map(decisions.map((d) => [d.id, d]));
 
   const missing = draft.lines.filter((l) => !byId.has(l.id)).map((l) => l.id);
-  if (missing.length) throw new ProfileError(`Every line needs a decision. Still open: ${missing.join(', ')}.`, 422);
+  if (missing.length)
+    throw new ProfileError(`Every line needs a decision. Still open: ${missing.join(', ')}.`, 422);
   const unknown = decisions.filter((d) => !draft.lines.some((l) => l.id === d.id));
   if (unknown.length) throw new ProfileError('Unknown lines in the decision list.', 422);
 
@@ -182,7 +209,11 @@ export async function savePortfolio(viewer: Viewer, input: Decisions): Promise<S
     else if (d.action === 'approve') final.set(line.id, line.value);
     else {
       const parsed = editValue[line.kind].safeParse(d.value);
-      if (!parsed.success) throw new ProfileError(`"${line.id}": ${parsed.error.issues[0]?.message ?? 'invalid edit'}`, 422);
+      if (!parsed.success)
+        throw new ProfileError(
+          `"${line.id}": ${parsed.error.issues[0]?.message ?? 'invalid edit'}`,
+          422,
+        );
       final.set(line.id, parsed.data);
     }
   }
@@ -198,7 +229,10 @@ export async function savePortfolio(viewer: Viewer, input: Decisions): Promise<S
     .filter((t): t is string => !!t);
   const ai = kept<string>('ai');
   const fit = kept<{ stages: string[]; industries: string[] }>('ideal.fit');
-  const terms = kept<{ workTypes: ('full_time' | 'fractional')[]; markets: (typeof markets)[number][] }>('ideal.terms');
+  const terms = kept<{
+    workTypes: ('full_time' | 'fractional')[];
+    markets: (typeof markets)[number][];
+  }>('ideal.terms');
   const idealMandate = {
     summary: kept<string>('ideal.summary') ?? null,
     stages: fit?.stages ?? [],
@@ -211,7 +245,8 @@ export async function savePortfolio(viewer: Viewer, input: Decisions): Promise<S
   };
 
   const counts = { approved: 0, edited: 0, removed: 0 };
-  for (const d of decisions) counts[d.action === 'approve' ? 'approved' : d.action === 'edit' ? 'edited' : 'removed']++;
+  for (const d of decisions)
+    counts[d.action === 'approve' ? 'approved' : d.action === 'edit' ? 'edited' : 'removed']++;
 
   return asViewer(viewer, async (tx) => {
     const profile = await ensureProfile(tx, viewer);
@@ -241,12 +276,22 @@ export async function savePortfolio(viewer: Viewer, input: Decisions): Promise<S
         context: t,
         evidenceNote: null,
       })),
-      ...(ai ? [{ outcomeType: 'ai_fluency', metric: 'AI in practice', value: 'Workflow', context: ai, evidenceNote: null }] : []),
+      ...(ai
+        ? [
+            {
+              outcomeType: 'ai_fluency',
+              metric: 'AI in practice',
+              value: 'Workflow',
+              context: ai,
+              evidenceNote: null,
+            },
+          ]
+        : []),
     ];
     if (rows.length)
-      await tx.insert(profileOutcomes).values(
-        rows.map((r) => ({ ...r, profileId: profile.id, candidateApprovedAt: now })),
-      );
+      await tx
+        .insert(profileOutcomes)
+        .values(rows.map((r) => ({ ...r, profileId: profile.id, candidateApprovedAt: now })));
     await tx
       .update(interviewSessions)
       .set({ profileId: profile.id, updatedAt: now })

@@ -65,7 +65,9 @@ function gradeField(c: z.infer<typeof FieldCase>): string[] {
       case 'level':
       case 'yearsExperience':
         if ((patch as Record<string, unknown>)[key] !== want)
-          problems.push(`${key} ${JSON.stringify((patch as Record<string, unknown>)[key])} (want ${JSON.stringify(want)})`);
+          problems.push(
+            `${key} ${JSON.stringify((patch as Record<string, unknown>)[key])} (want ${JSON.stringify(want)})`,
+          );
         break;
       case 'outcome': {
         const o = patch.outcomesByField?.[c.field];
@@ -74,7 +76,8 @@ function gradeField(c: z.infer<typeof FieldCase>): string[] {
           break;
         }
         for (const [k, v] of Object.entries(want as Record<string, string>))
-          if ((o as Record<string, unknown>)[k] !== v) problems.push(`outcome.${k} "${(o as Record<string, unknown>)[k]}" (want "${v}")`);
+          if ((o as Record<string, unknown>)[k] !== v)
+            problems.push(`outcome.${k} "${(o as Record<string, unknown>)[k]}" (want "${v}")`);
         break;
       }
       case 'scrubbed':
@@ -88,7 +91,8 @@ function gradeField(c: z.infer<typeof FieldCase>): string[] {
         if (!patch.headline) problems.push('no headline');
         break;
       case 'teamBuildsMin':
-        if ((patch.teamBuilds?.length ?? 0) < Number(want)) problems.push(`teamBuilds ${patch.teamBuilds?.length ?? 0}`);
+        if ((patch.teamBuilds?.length ?? 0) < Number(want))
+          problems.push(`teamBuilds ${patch.teamBuilds?.length ?? 0}`);
         break;
       case 'dealBreakersMin':
         if ((patch.ideal?.dealBreakers?.length ?? 0) < Number(want))
@@ -96,8 +100,13 @@ function gradeField(c: z.infer<typeof FieldCase>): string[] {
         break;
       case 'ideal':
         for (const [k, v] of Object.entries(want as Record<string, unknown>))
-          if (JSON.stringify((patch.ideal as Record<string, unknown> | undefined)?.[k] ?? null) !== JSON.stringify(v))
-            problems.push(`ideal.${k} ${JSON.stringify((patch.ideal as Record<string, unknown> | undefined)?.[k])} (want ${JSON.stringify(v)})`);
+          if (
+            JSON.stringify((patch.ideal as Record<string, unknown> | undefined)?.[k] ?? null) !==
+            JSON.stringify(v)
+          )
+            problems.push(
+              `ideal.${k} ${JSON.stringify((patch.ideal as Record<string, unknown> | undefined)?.[k])} (want ${JSON.stringify(v)})`,
+            );
         break;
       default:
         problems.push(`unknown expectation ${key}`);

@@ -22,7 +22,9 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   return handle(async () => {
     const viewer = await signedIn();
-    const { companyId } = companySchema.parse({ companyId: new URL(req.url).searchParams.get('companyId') });
+    const { companyId } = companySchema.parse({
+      companyId: new URL(req.url).searchParams.get('companyId'),
+    });
     await unblockCompany(viewer, companyId);
     return listBlocklist(viewer);
   });

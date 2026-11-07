@@ -10,19 +10,31 @@ const DEFAULT_TTL_SECONDS = 5 * 60;
 
 function secret(): string {
   const s = process.env.STORAGE_URL_SECRET ?? process.env.DEV_AUTH_SECRET;
-  if (!s || s.length < 32) throw new Error('STORAGE_URL_SECRET (or DEV_AUTH_SECRET) must be at least 32 characters');
+  if (!s || s.length < 32)
+    throw new Error('STORAGE_URL_SECRET (or DEV_AUTH_SECRET) must be at least 32 characters');
   return s;
 }
 
-const sign = (payload: string) => createHmac('sha256', secret()).update(payload).digest('base64url');
+const sign = (payload: string) =>
+  createHmac('sha256', secret()).update(payload).digest('base64url');
 
-export function signFileToken(fileId: string, ownerId: string, ttlSeconds = DEFAULT_TTL_SECONDS, now = Date.now()) {
+export function signFileToken(
+  fileId: string,
+  ownerId: string,
+  ttlSeconds = DEFAULT_TTL_SECONDS,
+  now = Date.now(),
+) {
   const exp = Math.floor(now / 1000) + ttlSeconds;
   const payload = `${fileId}.${ownerId}.${exp}`;
   return `${exp}.${sign(payload)}`;
 }
 
-export function verifyFileToken(token: string | null, fileId: string, ownerId: string, now = Date.now()): boolean {
+export function verifyFileToken(
+  token: string | null,
+  fileId: string,
+  ownerId: string,
+  now = Date.now(),
+): boolean {
   if (!token) return false;
   const [expRaw, sig] = token.split('.');
   const exp = Number(expRaw);

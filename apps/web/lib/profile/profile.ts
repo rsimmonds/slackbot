@@ -82,19 +82,26 @@ export const contextText = (c: ProfileContext) =>
     .map(([k, v]) => `[${k === 'resume' ? 'Résumé' : 'LinkedIn export'}]\n${v}`)
     .join('\n\n');
 
-export async function readContext(profile: Pick<ProfileRow, 'id' | 'resumeRef'>): Promise<ProfileContext> {
+export async function readContext(
+  profile: Pick<ProfileRow, 'id' | 'resumeRef'>,
+): Promise<ProfileContext> {
   const empty: ProfileContext = { version: 1, files: [], texts: {} };
   if (!profile.resumeRef) return empty;
   try {
     const value = await decryptJson<unknown>(profile.resumeRef, { aad: contextAad(profile.id) });
-    if (value && typeof value === 'object' && (value as ProfileContext).version === 1) return value as ProfileContext;
+    if (value && typeof value === 'object' && (value as ProfileContext).version === 1)
+      return value as ProfileContext;
   } catch {
     // Older rows (sample data) hold a plain storage path, not JSON. Treat as no context.
   }
   return empty;
 }
 
-export async function writeContext(tx: Tx, profileId: string, value: ProfileContext): Promise<void> {
+export async function writeContext(
+  tx: Tx,
+  profileId: string,
+  value: ProfileContext,
+): Promise<void> {
   await tx
     .update(candidateProfiles)
     .set({

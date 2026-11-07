@@ -14,7 +14,11 @@ export async function POST(req: Request) {
     const result = await requestDeletion(viewer, confirm);
     // Clerk sessions are revoked by deleting the Clerk user in the deletion job (see LEGAL_REVIEW P5).
     if (authMode() === 'dev') await endDevSession();
-    return { requestId: result.request.id, graceEndsAt: result.graceEndsAt, dueAt: result.request.dueAt };
+    return {
+      requestId: result.request.id,
+      graceEndsAt: result.graceEndsAt,
+      dueAt: result.request.dueAt,
+    };
   }, 202);
 }
 

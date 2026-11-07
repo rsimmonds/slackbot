@@ -41,7 +41,13 @@ export const visibilityTerms: Record<
     disclosures: [
       {
         recipient: 'CMO Beat talent partners',
-        fields: ['Headline', 'Outcomes', 'Ideal next mandate', 'Level and years', 'That you are open to contact'],
+        fields: [
+          'Headline',
+          'Outcomes',
+          'Ideal next mandate',
+          'Level and years',
+          'That you are open to contact',
+        ],
       },
       { recipient: 'Employers', fields: ['Anonymized match dossiers approved by a person'] },
     ],
@@ -63,7 +69,11 @@ export async function setVisibility(viewer: Viewer, input: z.infer<typeof visibi
     if (from === visibility) return { visibility, changed: false };
     const now = new Date();
     if (widens(from, visibility)) {
-      if (consent !== true) throw new ProfileError('Widening who can see your profile needs your explicit consent.', 422);
+      if (consent !== true)
+        throw new ProfileError(
+          'Widening who can see your profile needs your explicit consent.',
+          422,
+        );
       await tx.insert(consents).values({
         subjectUserId: viewer.id,
         kind: 'share',
@@ -75,7 +85,13 @@ export async function setVisibility(viewer: Viewer, input: z.infer<typeof visibi
       await tx
         .update(consents)
         .set({ withdrawnAt: now, updatedAt: now })
-        .where(and(eq(consents.subjectUserId, viewer.id), eq(consents.kind, 'share'), isNull(consents.withdrawnAt)));
+        .where(
+          and(
+            eq(consents.subjectUserId, viewer.id),
+            eq(consents.kind, 'share'),
+            isNull(consents.withdrawnAt),
+          ),
+        );
       if (visibility !== 'hidden')
         await tx.insert(consents).values({
           subjectUserId: viewer.id,
@@ -124,7 +140,10 @@ export async function listBlocklist(viewer: Viewer): Promise<{
     const current = rows.find((r) => r.companyId === profile.currentCompanyId);
     return {
       currentEmployer: current ? { id: current.companyId, name: current.name } : null,
-      blocked: rows.map((r) => ({ ...r, isCurrentEmployer: r.companyId === profile.currentCompanyId })),
+      blocked: rows.map((r) => ({
+        ...r,
+        isCurrentEmployer: r.companyId === profile.currentCompanyId,
+      })),
     };
   });
 }
@@ -135,9 +154,19 @@ export async function searchCompanies(viewer: Viewer, q: string) {
   if (term.length < 2) return [];
   return asViewer(viewer, (tx) =>
     tx
-      .select({ id: companies.id, name: companies.name, industry: companies.industry, market: companies.market })
+      .select({
+        id: companies.id,
+        name: companies.name,
+        industry: companies.industry,
+        market: companies.market,
+      })
       .from(companies)
-      .where(and(ilike(companies.name, `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`), isNull(companies.deletedAt)))
+      .where(
+        and(
+          ilike(companies.name, `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`),
+          isNull(companies.deletedAt),
+        ),
+      )
       .orderBy(sql`position(lower(${term}) in lower(${companies.name}))`, asc(companies.name))
       .limit(8),
   );
@@ -148,7 +177,10 @@ export async function blockCompany(viewer: Viewer, companyId: string) {
   z.uuid().parse(companyId);
   return asViewer(viewer, async (tx) => {
     const profile = await ensureProfile(tx, viewer);
-    const [company] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, companyId));
+    const [company] = await tx
+      .select({ id: companies.id })
+      .from(companies)
+      .where(eq(companies.id, companyId));
     if (!company) throw new ProfileError('Company not found.', 404);
     await tx
       .insert(profileBlocklist)
@@ -170,10 +202,15 @@ export async function unblockCompany(viewer: Viewer, companyId: string) {
   return asViewer(viewer, async (tx) => {
     const profile = await ensureProfile(tx, viewer);
     if (profile.currentCompanyId === companyId)
-      throw new ProfileError('Your current employer stays blocked while you work there. Change your current employer first.', 409);
+      throw new ProfileError(
+        'Your current employer stays blocked while you work there. Change your current employer first.',
+        409,
+      );
     await tx
       .delete(profileBlocklist)
-      .where(and(eq(profileBlocklist.profileId, profile.id), eq(profileBlocklist.companyId, companyId)));
+      .where(
+        and(eq(profileBlocklist.profileId, profile.id), eq(profileBlocklist.companyId, companyId)),
+      );
     await audit(tx, {
       actorId: viewer.id,
       action: 'profile.blocklist.remove',
@@ -191,9 +228,15 @@ export async function setCurrentEmployer(viewer: Viewer, companyId: string | nul
   return asViewer(viewer, async (tx) => {
     const profile = await ensureProfile(tx, viewer);
     if (companyId) {
-      const [company] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, companyId));
+      const [company] = await tx
+        .select({ id: companies.id })
+        .from(companies)
+        .where(eq(companies.id, companyId));
       if (!company) throw new ProfileError('Company not found.', 404);
-      await tx.insert(profileBlocklist).values({ profileId: profile.id, companyId }).onConflictDoNothing();
+      await tx
+        .insert(profileBlocklist)
+        .values({ profileId: profile.id, companyId })
+        .onConflictDoNothing();
     }
     await tx
       .update(candidateProfiles)

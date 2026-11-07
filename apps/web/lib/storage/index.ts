@@ -92,7 +92,10 @@ export const localProvider: StorageProvider = {
     };
   },
   async remove(tx, id) {
-    await tx.update(files).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(files.id, id));
+    await tx
+      .update(files)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(eq(files.id, id));
   },
 };
 

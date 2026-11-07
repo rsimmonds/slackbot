@@ -25,15 +25,18 @@ const PROTECTED: { attribute: string; pattern: RegExp }[] = [
   },
   {
     attribute: 'ethnicity or race',
-    pattern: /\b(ethnicity|ethnic|my race|racial|black woman|black man|white woman|white man|asian woman|asian man|latina|latino|latinx|hispanic)\b/i,
+    pattern:
+      /\b(ethnicity|ethnic|my race|racial|black woman|black man|white woman|white man|asian woman|asian man|latina|latino|latinx|hispanic)\b/i,
   },
   {
     attribute: 'religion',
-    pattern: /\b(religion|religious|christian|muslim|jewish|hindu|buddhist|sikh|catholic|church|mosque|synagogue|temple)\b/i,
+    pattern:
+      /\b(religion|religious|christian|muslim|jewish|hindu|buddhist|sikh|catholic|church|mosque|synagogue|temple)\b/i,
   },
   {
     attribute: 'disability or health',
-    pattern: /\b(disab(led|ility)|chronic illness|diagnos(ed|is)|wheelchair|neurodivergent|adhd|autis(m|tic)|dyslexi[ac]|cancer|pregnan(t|cy)|medical leave|mental health)\b/i,
+    pattern:
+      /\b(disab(led|ility)|chronic illness|diagnos(ed|is)|wheelchair|neurodivergent|adhd|autis(m|tic)|dyslexi[ac]|cancer|pregnan(t|cy)|medical leave|mental health)\b/i,
   },
   {
     attribute: 'family status',
@@ -42,7 +45,8 @@ const PROTECTED: { attribute: string; pattern: RegExp }[] = [
   },
   {
     attribute: 'graduation year',
-    pattern: /\b(graduated (in |from \S+ in )?(19|20)\d{2}|class of (19|20)\d{2}|(mba|ba|bsc|ma|msc|phd|degree)[^.]{0,30}\b(19|20)\d{2})/i,
+    pattern:
+      /\b(graduated (in |from \S+ in )?(19|20)\d{2}|class of (19|20)\d{2}|(mba|ba|bsc|ma|msc|phd|degree)[^.]{0,30}\b(19|20)\d{2})/i,
   },
   { attribute: 'photo', pattern: /\b(photo|headshot|picture of me|selfie)\b/i },
 ];
@@ -61,8 +65,7 @@ const CONTACT: RegExp[] = [
 /** Street address lines, e.g. "123 King Street West", "Flat 4, 22 Baker St". */
 const ADDRESS =
   /\b\d{1,5}\s+[A-Z][\w'.-]*(\s+[A-Z][\w'.-]*){0,3}\s+(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|court|ct|place|pl|square|sq|crescent|terrace)\b\.?/i;
-const POSTCODE =
-  /\b([A-Z]\d[A-Z]\s?\d[A-Z]\d|[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}|\d{5}(-\d{4})?)\b/;
+const POSTCODE = /\b([A-Z]\d[A-Z]\s?\d[A-Z]\d|[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}|\d{5}(-\d{4})?)\b/;
 
 export function splitSentences(text: string): string[] {
   return text
@@ -117,7 +120,8 @@ export function scrubDocument(text: string): ScrubResult {
       const l = line.trim();
       // Long lines are body text (or a PDF flattened to one line): scrub them inline instead.
       if (!l || l.length > 160) return true;
-      if (CONTACT.some((re) => new RegExp(re.source, re.flags.replace('g', '')).test(l))) return false;
+      if (CONTACT.some((re) => new RegExp(re.source, re.flags.replace('g', '')).test(l)))
+        return false;
       if (ADDRESS.test(l)) return false;
       if (POSTCODE.test(l) && l.length < 60 && /,/.test(l)) return false;
       return true;

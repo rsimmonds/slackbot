@@ -16,7 +16,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const { id } = await ctx.params;
   const viewer = await getViewer();
   if (!viewer || !uuidPattern.test(id)) return notFound();
-  if (!verifyFileToken(new URL(req.url).searchParams.get('token'), id, viewer.id)) return notFound();
+  if (!verifyFileToken(new URL(req.url).searchParams.get('token'), id, viewer.id))
+    return notFound();
   const file = await asViewer(viewer, (tx) => storage().get(tx, id));
   if (!file) return notFound();
   const safeName = file.filename.replace(/[^\w .()-]/g, '_');

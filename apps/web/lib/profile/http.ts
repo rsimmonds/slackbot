@@ -12,10 +12,14 @@ export async function handle(fn: () => Promise<unknown>, status = 200): Promise<
   } catch (e) {
     if (e instanceof ZodError)
       return NextResponse.json(
-        { error: 'Invalid input', issues: e.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) },
+        {
+          error: 'Invalid input',
+          issues: e.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+        },
         { status: 400 },
       );
-    if (e instanceof ProfileError) return NextResponse.json({ error: e.message }, { status: e.status });
+    if (e instanceof ProfileError)
+      return NextResponse.json({ error: e.message }, { status: e.status });
     throw e;
   }
 }

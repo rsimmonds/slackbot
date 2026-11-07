@@ -46,7 +46,12 @@ export type DataRequest = typeof dataRequests.$inferSelect;
 
 export async function myDataRequests(viewer: Viewer): Promise<DataRequest[]> {
   return asViewer(viewer, (tx) =>
-    tx.select().from(dataRequests).where(eq(dataRequests.userId, viewer.id)).orderBy(desc(dataRequests.createdAt)).limit(20),
+    tx
+      .select()
+      .from(dataRequests)
+      .where(eq(dataRequests.userId, viewer.id))
+      .orderBy(desc(dataRequests.createdAt))
+      .limit(20),
   );
 }
 
@@ -55,13 +60,28 @@ export async function requestExport(viewer: Viewer, now = new Date()): Promise<D
     const [pending] = await tx
       .select()
       .from(dataRequests)
-      .where(and(eq(dataRequests.userId, viewer.id), eq(dataRequests.kind, 'export'), eq(dataRequests.status, 'pending')));
+      .where(
+        and(
+          eq(dataRequests.userId, viewer.id),
+          eq(dataRequests.kind, 'export'),
+          eq(dataRequests.status, 'pending'),
+        ),
+      );
     if (pending) return pending;
     const [row] = await tx
       .insert(dataRequests)
-      .values({ userId: viewer.id, kind: 'export', dueAt: new Date(now.getTime() + days(REQUEST_DUE_DAYS)) })
+      .values({
+        userId: viewer.id,
+        kind: 'export',
+        dueAt: new Date(now.getTime() + days(REQUEST_DUE_DAYS)),
+      })
       .returning();
-    await audit(tx, { actorId: viewer.id, action: 'data.export.request', targetType: 'data_request', targetId: row!.id });
+    await audit(tx, {
+      actorId: viewer.id,
+      action: 'data.export.request',
+      targetType: 'data_request',
+      targetId: row!.id,
+    });
     return row!;
   });
 }
@@ -104,19 +124,34 @@ export interface DeletionRequested {
  * withdraws consents; the account itself is permanently deleted after a 7-day grace window
  * (and always within 30 days).
  */
-export async function requestDeletion(viewer: Viewer, confirm: string, now = new Date()): Promise<DeletionRequested> {
-  if (confirm.trim().toLowerCase() !== 'delete') throw new ProfileError('Type "delete" to confirm.', 422);
+export async function requestDeletion(
+  viewer: Viewer,
+  confirm: string,
+  now = new Date(),
+): Promise<DeletionRequested> {
+  if (confirm.trim().toLowerCase() !== 'delete')
+    throw new ProfileError('Type "delete" to confirm.', 422);
   return asViewer(viewer, async (tx) => {
     const [existing] = await tx
       .select()
       .from(dataRequests)
-      .where(and(eq(dataRequests.userId, viewer.id), eq(dataRequests.kind, 'delete'), eq(dataRequests.status, 'pending')));
+      .where(
+        and(
+          eq(dataRequests.userId, viewer.id),
+          eq(dataRequests.kind, 'delete'),
+          eq(dataRequests.status, 'pending'),
+        ),
+      );
     const request =
       existing ??
       (
         await tx
           .insert(dataRequests)
-          .values({ userId: viewer.id, kind: 'delete', dueAt: new Date(now.getTime() + days(REQUEST_DUE_DAYS)) })
+          .values({
+            userId: viewer.id,
+            kind: 'delete',
+            dueAt: new Date(now.getTime() + days(REQUEST_DUE_DAYS)),
+          })
           .returning()
       )[0]!;
 
@@ -125,18 +160,34 @@ export async function requestDeletion(viewer: Viewer, confirm: string, now = new
       .from(candidateProfiles)
       .where(eq(candidateProfiles.userId, viewer.id));
     if (profile) await anonymizeProfile(tx, profile.id, viewer.id, now);
-    for (const f of await tx.select({ id: files.id }).from(files).where(eq(files.ownerId, viewer.id)))
+    for (const f of await tx
+      .select({ id: files.id })
+      .from(files)
+      .where(eq(files.ownerId, viewer.id)))
       await storage().remove(tx, f.id);
     await tx
       .update(interviewSessions)
       .set({ status: 'abandoned', updatedAt: now })
-      .where(and(eq(interviewSessions.ownerId, viewer.id), inArray(interviewSessions.status, ['active', 'paused'])));
+      .where(
+        and(
+          eq(interviewSessions.ownerId, viewer.id),
+          inArray(interviewSessions.status, ['active', 'paused']),
+        ),
+      );
     await tx
       .update(consents)
       .set({ withdrawnAt: now, updatedAt: now })
       .where(and(eq(consents.subjectUserId, viewer.id), isNull(consents.withdrawnAt)));
-    await audit(tx, { actorId: viewer.id, action: 'data.delete.request', targetType: 'data_request', targetId: request.id });
-    return { request, graceEndsAt: new Date(request.createdAt.getTime() + days(DELETE_GRACE_DAYS)) };
+    await audit(tx, {
+      actorId: viewer.id,
+      action: 'data.delete.request',
+      targetType: 'data_request',
+      targetId: request.id,
+    });
+    return {
+      request,
+      graceEndsAt: new Date(request.createdAt.getTime() + days(DELETE_GRACE_DAYS)),
+    };
   });
 }
 
@@ -146,7 +197,13 @@ export async function cancelDeletion(viewer: Viewer, now = new Date()): Promise<
     const [pending] = await tx
       .select()
       .from(dataRequests)
-      .where(and(eq(dataRequests.userId, viewer.id), eq(dataRequests.kind, 'delete'), eq(dataRequests.status, 'pending')));
+      .where(
+        and(
+          eq(dataRequests.userId, viewer.id),
+          eq(dataRequests.kind, 'delete'),
+          eq(dataRequests.status, 'pending'),
+        ),
+      );
     if (!pending) return false;
     if (pending.createdAt.getTime() + days(DELETE_GRACE_DAYS) <= now.getTime())
       throw new ProfileError('The grace period has ended. Deletion is in progress.', 409);
@@ -154,7 +211,12 @@ export async function cancelDeletion(viewer: Viewer, now = new Date()): Promise<
       .update(dataRequests)
       .set({ status: 'cancelled', updatedAt: now })
       .where(eq(dataRequests.id, pending.id));
-    await audit(tx, { actorId: viewer.id, action: 'data.delete.cancel', targetType: 'data_request', targetId: pending.id });
+    await audit(tx, {
+      actorId: viewer.id,
+      action: 'data.delete.cancel',
+      targetType: 'data_request',
+      targetId: pending.id,
+    });
     return true;
   });
 }
@@ -165,7 +227,10 @@ export async function cancelDeletion(viewer: Viewer, now = new Date()): Promise<
  * anonymized instead of deleted. audit_log is append-only by design: entries keep the actor's
  * id, which no longer resolves to anyone once the user row is gone or anonymized.
  */
-export async function hardDeleteUser(userId: string, now = new Date()): Promise<'deleted' | 'anonymized'> {
+export async function hardDeleteUser(
+  userId: string,
+  now = new Date(),
+): Promise<'deleted' | 'anonymized'> {
   return adminDb().transaction(async (tx) => {
     const [user] = await tx.select({ email: users.email }).from(users).where(eq(users.id, userId));
     // interview_sessions → candidate_profiles has no cascade, so sessions go first.
@@ -247,8 +312,14 @@ export async function buildExport(userId: string, now = new Date()) {
   const db = adminDb();
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (!user) throw new Error('User not found');
-  const roles = await db.select({ role: userRoles.role }).from(userRoles).where(eq(userRoles.userId, userId));
-  const [profile] = await db.select().from(candidateProfiles).where(eq(candidateProfiles.userId, userId));
+  const roles = await db
+    .select({ role: userRoles.role })
+    .from(userRoles)
+    .where(eq(userRoles.userId, userId));
+  const [profile] = await db
+    .select()
+    .from(candidateProfiles)
+    .where(eq(candidateProfiles.userId, userId));
   const outcomes = profile
     ? await db.select().from(profileOutcomes).where(eq(profileOutcomes.profileId, profile.id))
     : [];
@@ -259,24 +330,46 @@ export async function buildExport(userId: string, now = new Date()) {
         .innerJoin(companies, eq(companies.id, profileBlocklist.companyId))
         .where(eq(profileBlocklist.profileId, profile.id))
     : [];
-  const sessions = await db.select().from(interviewSessions).where(eq(interviewSessions.ownerId, userId));
+  const sessions = await db
+    .select()
+    .from(interviewSessions)
+    .where(eq(interviewSessions.ownerId, userId));
   const fileRows = await db
     .select()
     .from(files)
     .where(and(eq(files.ownerId, userId), sql`${files.purpose} <> 'data_export'`));
   const consentRows = await db.select().from(consents).where(eq(consents.subjectUserId, userId));
-  const apps = profile ? await db.select().from(applications).where(eq(applications.profileId, profile.id)) : [];
+  const apps = profile
+    ? await db.select().from(applications).where(eq(applications.profileId, profile.id))
+    : [];
   const searches = await db.select().from(savedSearches).where(eq(savedSearches.userId, userId));
   const subs = await db
-    .select({ email: subscribers.email, status: subscribers.status, segments: subscribers.segments, preferences: subscribers.preferences, consentAt: subscribers.consentAt, consentText: subscribers.consentText })
+    .select({
+      email: subscribers.email,
+      status: subscribers.status,
+      segments: subscribers.segments,
+      preferences: subscribers.preferences,
+      consentAt: subscribers.consentAt,
+      consentText: subscribers.consentText,
+    })
     .from(subscribers)
     .where(eq(subscribers.email, user.email));
   const requests = await db.select().from(dataRequests).where(eq(dataRequests.userId, userId));
   const auditRows = await db
-    .select({ action: auditLog.action, targetType: auditLog.targetType, targetId: auditLog.targetId, at: auditLog.at, actorIsYou: sql<boolean>`${auditLog.actorId} = ${userId}` })
+    .select({
+      action: auditLog.action,
+      targetType: auditLog.targetType,
+      targetId: auditLog.targetId,
+      at: auditLog.at,
+      actorIsYou: sql<boolean>`${auditLog.actorId} = ${userId}`,
+    })
     .from(auditLog)
     .where(
-      or(eq(auditLog.actorId, userId), eq(auditLog.targetId, userId), ...(profile ? [eq(auditLog.targetId, profile.id)] : [])),
+      or(
+        eq(auditLog.actorId, userId),
+        eq(auditLog.targetId, userId),
+        ...(profile ? [eq(auditLog.targetId, profile.id)] : []),
+      ),
     )
     .orderBy(desc(auditLog.at))
     .limit(5000);
@@ -303,9 +396,15 @@ export async function buildExport(userId: string, now = new Date()) {
           locations: profile.locations,
           idealMandate: profile.idealMandate,
           aiNoticeAcknowledgedAt: profile.aiNoticeAckAt,
-          compFloor: await safeDecrypt(profile.compFloor, `candidate_profiles.comp_floor:${profile.id}`),
+          compFloor: await safeDecrypt(
+            profile.compFloor,
+            `candidate_profiles.comp_floor:${profile.id}`,
+          ),
           contact: await safeDecrypt(profile.contact, `candidate_profiles.contact:${profile.id}`),
-          uploadsAndContext: await safeDecrypt(profile.resumeRef, `candidate_profiles.resume_ref:${profile.id}`),
+          uploadsAndContext: await safeDecrypt(
+            profile.resumeRef,
+            `candidate_profiles.resume_ref:${profile.id}`,
+          ),
           outcomes: outcomes.map(({ profileId: _p, ...o }) => o),
           blocklist: blocklist.map((b) => b.company),
         }
@@ -318,7 +417,9 @@ export async function buildExport(userId: string, now = new Date()) {
         status: s.status,
         createdAt: s.createdAt,
         state: s.transcript
-          ? await decryptJson<unknown>(s.transcript, { aad: s.id }).catch(() => '[could not be decrypted]')
+          ? await decryptJson<unknown>(s.transcript, { aad: s.id }).catch(
+              () => '[could not be decrypted]',
+            )
           : null,
         mandateDraft: s.draftOutput,
       })),
@@ -334,11 +435,30 @@ export async function buildExport(userId: string, now = new Date()) {
         note: 'The file itself can be downloaded from your account while it is stored.',
       })),
     ),
-    consents: consentRows.map((c) => ({ kind: c.kind, scope: c.scope, grantedAt: c.grantedAt, withdrawnAt: c.withdrawnAt })),
-    applications: apps.map((a) => ({ listingId: a.listingId, status: a.status, createdAt: a.createdAt })),
-    savedSearches: searches.map((s) => ({ name: s.name, query: s.query, alertFrequency: s.alertFrequency, createdAt: s.createdAt })),
+    consents: consentRows.map((c) => ({
+      kind: c.kind,
+      scope: c.scope,
+      grantedAt: c.grantedAt,
+      withdrawnAt: c.withdrawnAt,
+    })),
+    applications: apps.map((a) => ({
+      listingId: a.listingId,
+      status: a.status,
+      createdAt: a.createdAt,
+    })),
+    savedSearches: searches.map((s) => ({
+      name: s.name,
+      query: s.query,
+      alertFrequency: s.alertFrequency,
+      createdAt: s.createdAt,
+    })),
     newsletter: subs,
-    dataRequests: requests.map((r) => ({ kind: r.kind, status: r.status, createdAt: r.createdAt, completedAt: r.completedAt })),
+    dataRequests: requests.map((r) => ({
+      kind: r.kind,
+      status: r.status,
+      createdAt: r.createdAt,
+      completedAt: r.completedAt,
+    })),
     activity: auditRows,
   };
 }
@@ -376,11 +496,22 @@ export async function runDataExports({ now = new Date() } = {}) {
         .update(dataRequests)
         .set({ status: 'completed', completedAt: now, resultFileId: f.id, updatedAt: now })
         .where(eq(dataRequests.id, r.id));
-      await audit(tx, { actorId: null, action: 'data.export.complete', targetType: 'data_request', targetId: r.id });
+      await audit(tx, {
+        actorId: null,
+        action: 'data.export.complete',
+        targetType: 'data_request',
+        targetId: r.id,
+      });
       return f.id;
     });
     const email = exportReadyEmail();
-    await sendEmail({ to: archive.account.email, template: 'data-export-ready', subject: email.subject, html: email.html, text: email.text });
+    await sendEmail({
+      to: archive.account.email,
+      template: 'data-export-ready',
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+    });
     done.push(fileId);
   }
   return done;
@@ -401,20 +532,37 @@ export async function runProfileRetention({ now = new Date() } = {}) {
     .where(
       and(
         eq(candidateProfiles.isSample, false),
-        or(isNotNull(candidateProfiles.headline), isNotNull(candidateProfiles.resumeRef), isNotNull(candidateProfiles.idealMandate)),
+        or(
+          isNotNull(candidateProfiles.headline),
+          isNotNull(candidateProfiles.resumeRef),
+          isNotNull(candidateProfiles.idealMandate),
+        ),
         sql`coalesce(${candidateProfiles.lastActiveAt}, ${candidateProfiles.updatedAt}) < ${cutoff.toISOString()}::timestamptz`,
       ),
     );
   for (const p of stale) {
     await adminDb().transaction(async (tx) => {
       await anonymizeProfile(tx, p.id, p.userId, now);
-      await tx.update(files).set({ deletedAt: now, updatedAt: now }).where(and(eq(files.ownerId, p.userId), isNull(files.deletedAt)));
-      await audit(tx, { actorId: null, action: 'profile.retention.anonymize', targetType: 'candidate_profile', targetId: p.id });
+      await tx
+        .update(files)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(files.ownerId, p.userId), isNull(files.deletedAt)));
+      await audit(tx, {
+        actorId: null,
+        action: 'profile.retention.anonymize',
+        targetType: 'candidate_profile',
+        targetId: p.id,
+      });
     });
   }
   const oldExports = await adminDb()
     .delete(files)
-    .where(and(eq(files.purpose, 'data_export'), lt(files.createdAt, new Date(now.getTime() - days(EXPORT_KEEP_DAYS)))))
+    .where(
+      and(
+        eq(files.purpose, 'data_export'),
+        lt(files.createdAt, new Date(now.getTime() - days(EXPORT_KEEP_DAYS))),
+      ),
+    )
     .returning({ id: files.id });
   return { anonymized: stale.length, exportsRemoved: oldExports.length };
 }
@@ -425,7 +573,13 @@ export async function latestExport(viewer: Viewer) {
     const [row] = await tx
       .select({ id: files.id, createdAt: files.createdAt, sizeBytes: files.sizeBytes })
       .from(files)
-      .where(and(eq(files.ownerId, viewer.id), eq(files.purpose, 'data_export'), isNull(files.deletedAt)))
+      .where(
+        and(
+          eq(files.ownerId, viewer.id),
+          eq(files.purpose, 'data_export'),
+          isNull(files.deletedAt),
+        ),
+      )
       .orderBy(desc(files.createdAt))
       .limit(1);
     return row ?? null;

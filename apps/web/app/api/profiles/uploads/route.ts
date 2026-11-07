@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { handle, signedIn } from '@/lib/profile/http';
 import { ProfileError } from '@/lib/profile/profile';
-import { listMyUploads, MAX_UPLOAD_BYTES, uploadProfileDocument, uploadPurposes } from '@/lib/profile/uploads';
+import {
+  listMyUploads,
+  MAX_UPLOAD_BYTES,
+  uploadProfileDocument,
+  uploadPurposes,
+} from '@/lib/profile/uploads';
 import { signedFileUrl } from '@/lib/storage/signed-url';
 
 /** GET /api/profiles/uploads — the candidate's current documents, with short-lived download links. */
@@ -18,7 +23,8 @@ export async function POST(req: Request) {
   return handle(async () => {
     const viewer = await signedIn();
     const length = Number(req.headers.get('content-length') ?? 0);
-    if (length > MAX_UPLOAD_BYTES + 64 * 1024) throw new ProfileError('Files must be 5 MB or smaller.', 413);
+    if (length > MAX_UPLOAD_BYTES + 64 * 1024)
+      throw new ProfileError('Files must be 5 MB or smaller.', 413);
     let form: FormData;
     try {
       form = await req.formData();

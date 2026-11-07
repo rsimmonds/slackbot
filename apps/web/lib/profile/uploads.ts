@@ -4,7 +4,13 @@ import { audit } from '@cmobeat/db';
 import type { Viewer } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
 import { storage } from '@/lib/storage';
-import { ensureProfile, ProfileError, readContext, requireCandidate, writeContext } from './profile';
+import {
+  ensureProfile,
+  ProfileError,
+  readContext,
+  requireCandidate,
+  writeContext,
+} from './profile';
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const uploadPurposes = ['resume', 'linkedin_pdf'] as const;
@@ -61,8 +67,10 @@ export async function uploadProfileDocument(
   requireCandidate(viewer);
   if (!uploadPurposes.includes(input.purpose)) throw new ProfileError('Unknown upload type.');
   if (input.bytes.length === 0) throw new ProfileError('The file is empty.');
-  if (input.bytes.length > MAX_UPLOAD_BYTES) throw new ProfileError('Files must be 5 MB or smaller.', 413);
-  if (!isPdf(input.bytes)) throw new ProfileError('Upload a PDF. Other formats are not accepted.', 415);
+  if (input.bytes.length > MAX_UPLOAD_BYTES)
+    throw new ProfileError('Files must be 5 MB or smaller.', 413);
+  if (!isPdf(input.bytes))
+    throw new ProfileError('Upload a PDF. Other formats are not accepted.', 415);
   const scan = await scanner(input.bytes);
   if (!scan.clean) throw new ProfileError('This file could not be accepted.', 422);
 
@@ -86,12 +94,18 @@ export async function uploadProfileDocument(
     });
     const ctx = await readContext(profile);
     // One current file per purpose: a new résumé replaces the old one.
-    for (const old of ctx.files.filter((f) => f.purpose === input.purpose)) await storage().remove(tx, old.id);
+    for (const old of ctx.files.filter((f) => f.purpose === input.purpose))
+      await storage().remove(tx, old.id);
     await writeContext(tx, profile.id, {
       version: 1,
       files: [
         ...ctx.files.filter((f) => f.purpose !== input.purpose),
-        { id: file.id, purpose: input.purpose, uploadedAt: new Date().toISOString(), pages: extracted.pages },
+        {
+          id: file.id,
+          purpose: input.purpose,
+          uploadedAt: new Date().toISOString(),
+          pages: extracted.pages,
+        },
       ],
       texts: { ...ctx.texts, [input.purpose]: scrubbed.text },
     });
@@ -100,9 +114,19 @@ export async function uploadProfileDocument(
       action: 'profile.upload',
       targetType: 'file',
       targetId: file.id,
-      metadata: { purpose: input.purpose, pages: extracted.pages, sizeBytes: input.bytes.length, removed: scrubbed.removed },
+      metadata: {
+        purpose: input.purpose,
+        pages: extracted.pages,
+        sizeBytes: input.bytes.length,
+        removed: scrubbed.removed,
+      },
     });
-    return { fileId: file.id, pages: extracted.pages, removed: scrubbed.removed, contextChars: scrubbed.text.length };
+    return {
+      fileId: file.id,
+      pages: extracted.pages,
+      removed: scrubbed.removed,
+      contextChars: scrubbed.text.length,
+    };
   });
 }
 

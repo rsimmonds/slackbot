@@ -16,9 +16,10 @@ describe('profile interviewer evals (offline)', () => {
 
   it('never keeps a protected attribute in any case, whatever the threshold', () => {
     for (const c of loadProfileSuite().cases) {
-      const draft = 'field' in c
-        ? profileFields.find((f) => f.key === c.field)!.extract(c.answer, {})
-        : runOfflineInterview(c.answers);
+      const draft =
+        'field' in c
+          ? profileFields.find((f) => f.key === c.field)!.extract(c.answer, {})
+          : runOfflineInterview(c.answers);
       const kept = JSON.stringify({ ...(draft ?? {}), scrubbed: undefined });
       expect(containsProtected(kept), `${c.id} kept a protected attribute: ${kept}`).toBe(false);
     }
@@ -76,7 +77,9 @@ describe('scrubbers', () => {
   });
 
   it('removes contact details but keeps year ranges and results', () => {
-    const r = scrubAnswer('From 2019-2023 we grew 3x. Reach me at a.b@example.com or +44 20 7946 0958.');
+    const r = scrubAnswer(
+      'From 2019-2023 we grew 3x. Reach me at a.b@example.com or +44 20 7946 0958.',
+    );
     expect(r.text).toContain('2019-2023');
     expect(r.text).toContain('3x');
     expect(r.text).not.toMatch(/@|7946/);
@@ -94,6 +97,8 @@ describe('scrubbers', () => {
     expect(withoutEmployerNames('VP Marketing at Northwind Labs, building demand.')).toBe(
       'VP Marketing, building demand.',
     );
-    expect(withoutEmployerNames('Head of Marketing for B2B SaaS')).toBe('Head of Marketing for B2B SaaS');
+    expect(withoutEmployerNames('Head of Marketing for B2B SaaS')).toBe(
+      'Head of Marketing for B2B SaaS',
+    );
   });
 });
