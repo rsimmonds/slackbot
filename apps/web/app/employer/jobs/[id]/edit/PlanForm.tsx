@@ -1,11 +1,11 @@
 'use client';
 
 import { Button, cn } from '@cmobeat/ui';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { checkoutAction, type FormState } from '../../actions';
 
 export interface PlanOption {
-  value: 'standard' | 'featured';
+  value: 'standard' | 'featured' | 'subscription';
   label: string;
   price: string;
   detail: string;
@@ -27,6 +27,8 @@ export function PlanForm({
     checkoutAction.bind(null, listingId),
     {},
   );
+  const initial = current === 'featured' ? 'featured' : 'standard';
+  const [selected, setSelected] = useState<string>(initial);
   return (
     <form action={action} className="flex flex-col gap-6">
       {alreadyPaid ? (
@@ -48,7 +50,8 @@ export function PlanForm({
                   type="radio"
                   name="plan"
                   value={o.value}
-                  defaultChecked={o.value === (current === 'featured' ? 'featured' : 'standard')}
+                  defaultChecked={o.value === initial}
+                  onChange={() => setSelected(o.value)}
                   className="size-4 accent-[var(--text)]"
                 />
               </span>
@@ -65,7 +68,11 @@ export function PlanForm({
       ) : null}
       <div>
         <Button type="submit" disabled={pending}>
-          {alreadyPaid ? 'Resubmit for review' : 'Continue to payment'}
+          {alreadyPaid
+            ? 'Resubmit for review'
+            : selected === 'subscription'
+              ? 'Submit for review'
+              : 'Continue to payment'}
         </Button>
       </div>
     </form>

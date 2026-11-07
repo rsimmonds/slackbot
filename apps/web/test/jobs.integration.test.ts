@@ -9,7 +9,7 @@ import {
 } from '@cmobeat/db';
 import { latestEmailTo } from '@cmobeat/email';
 import { buildFakeEvent, fakePaymentsSecret } from '@cmobeat/payments';
-import { and, eq, like } from 'drizzle-orm';
+import { and, eq, isNull, like, sql } from 'drizzle-orm';
 import { GET as searchRoute, POST as createRoute } from '@/app/api/listings/route';
 import { POST as parseRoute } from '@/app/api/listings/parse/route';
 import { PATCH as patchRoute } from '@/app/api/listings/[id]/route';
@@ -79,7 +79,13 @@ async function pay(listingId: string) {
 describe('public search', () => {
   it('shows anonymous visitors only live listings, featured first', async () => {
     const { items, total } = await withAnon((tx) => searchJobs(tx, { page: 1 }, { pageSize: 50 }));
-    expect(total).toBe(26);
+    // Other suites publish listings in the same database, so compare with what is live right now.
+    const [row] = await adminDb()
+      .select({ live: sql<number>`count(*)::int` })
+      .from(listings)
+      .where(and(eq(listings.status, 'live'), isNull(listings.deletedAt)));
+    expect(total).toBe(row!.live);
+    expect(total).toBeGreaterThanOrEqual(26);
     expect(items.every((j) => j.status === 'live')).toBe(true);
     const firstNonFeatured = items.findIndex((j) => !j.featured);
     expect(items.slice(firstNonFeatured).some((j) => j.featured)).toBe(false);

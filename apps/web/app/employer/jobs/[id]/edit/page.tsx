@@ -6,6 +6,7 @@ import { requireArea } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
 import { uuidPattern } from '@/lib/api';
 import { editableStatuses, getEmployerListing, mandateGaps } from '@/lib/jobs/posting';
+import { hasActiveEmployerSubscription } from '@/lib/billing/status';
 import { MandateForm } from './MandateForm';
 import { PlanForm } from './PlanForm';
 
@@ -35,6 +36,7 @@ export default async function EditListingPage({
   const editable = (editableStatuses as readonly string[]).includes(listing.status);
   const gaps = mandateGaps(mandate);
   const confirmed = !!mandate.confirmedAt;
+  const subscribed = await hasActiveEmployerSubscription(listing.companyId!);
 
   return (
     <DashboardFrame
@@ -95,6 +97,17 @@ export default async function EditListingPage({
                 current={listing.plan}
                 alreadyPaid={!!listing.paidAt}
                 options={[
+                  ...(subscribed
+                    ? [
+                        {
+                          value: 'subscription' as const,
+                          label: 'Included in your subscription',
+                          price: usd(0),
+                          detail:
+                            'Unlimited posts while your subscription is active. Reviewed by a person, then live for 60 days.',
+                        },
+                      ]
+                    : []),
                   {
                     value: 'standard',
                     label: catalogue.job_post_standard.label,

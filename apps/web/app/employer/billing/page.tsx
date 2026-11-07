@@ -1,10 +1,14 @@
+import { subscriptionPlans } from '@cmobeat/config';
 import { employerMembers } from '@cmobeat/db';
 import { MeshPanel, MonoLabel, Status } from '@cmobeat/ui';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { invoiceText, invoiceTone, isoDate } from '@/components/searches/SearchParts';
+import { SubscriptionPanel } from '@/components/billing/SubscriptionPanel';
 import { requireArea } from '@/lib/auth';
+import { summarize } from '@/lib/billing/subscriptions';
+import { teamFor } from '@/lib/billing/team';
 import { asViewer } from '@/lib/db';
 import { companyInvoices, parseProduct } from '@/lib/searches/invoices';
 import { formatMinor } from '@/lib/searches/terms';
@@ -20,9 +24,15 @@ const kindLabel = (product: string) => {
   return product;
 };
 
-export default async function EmployerBillingPage() {
+export default async function EmployerBillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ subscribed?: string }>;
+}) {
   const viewer = await requireArea('employer');
-  const [rows, seat] = await Promise.all([
+  const sp = await searchParams;
+  const plan = subscriptionPlans.employer_subscription;
+  const [rows, seat, team] = await Promise.all([
     companyInvoices(viewer),
     asViewer(viewer, async (tx) => {
       const [m] = await tx
@@ -32,6 +42,7 @@ export default async function EmployerBillingPage() {
         .limit(1);
       return m?.seat ?? 'member';
     }),
+    teamFor(viewer),
   ]);
   const open = rows.filter((r) => r.status === 'open');
   const owed = open.reduce<Record<string, number>>((acc, r) => {
@@ -49,6 +60,23 @@ export default async function EmployerBillingPage() {
           : 'Invoices and receipts for your company. Invoices are due within 30 days.'
       }
     >
+      {sp.subscribed ? (
+        <div className="col-span-12">
+          <Status tone="human">
+            Subscribed. Unlimited posts are on, and your team has {team.limit} seats.
+          </Status>
+        </div>
+      ) : null}
+      <SubscriptionPanel
+        className="col-span-12"
+        product="employer_subscription"
+        label={plan.label}
+        price={formatMinor(plan.amount, plan.currency)}
+        summary={plan.summary}
+        subscription={summarize(team.billing.subscription)}
+        canManage={team.canManage}
+        seatsLine={`${team.used} of ${team.limit} in use`}
+      />
       <MeshPanel className="col-span-12 lg:col-span-4" eyebrow="Open" title="Amount due">
         {open.length === 0 ? (
           <p className="text-small text-text-2">Nothing due.</p>

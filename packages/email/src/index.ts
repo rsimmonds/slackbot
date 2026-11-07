@@ -45,6 +45,15 @@ export {
 } from './templates/Sponsorship';
 export { activeSponsorship, type SponsorshipPlacement } from './sponsorship';
 export {
+  careerDigestEmail,
+  coachingRequestedEmail,
+  coachingScheduledEmail,
+  seatInviteEmail,
+  subscriptionEndedEmail,
+  subscriptionPaymentFailedEmail,
+  subscriptionStartedEmail,
+} from './templates/subscriptions';
+export {
   newsletterProvider,
   OutboxNewsletterProvider,
   ResendNewsletterProvider,

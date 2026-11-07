@@ -23,6 +23,43 @@ export type ProductKey = keyof typeof catalogue;
 export const catalogueCurrency: Currency = 'USD';
 
 /**
+ * Subscriptions (spec 8.3, Phase 4). Flat monthly prices in USD minor units; Stripe price IDs come
+ * from env. The employer plan includes seats; changing seats does not change the price in Phase 4
+ * (pricing of extra seats is an open business question).
+ */
+export const subscriptionPlans = {
+  employer_subscription: {
+    label: 'Employer subscription',
+    amount: 150_000,
+    currency: 'USD',
+    interval: 'month',
+    includedSeats: 5,
+    maxSeats: 25,
+    summary:
+      'Unlimited job posts, every listing reviewed by a person, and seats for your hiring team.',
+  },
+  candidate_concierge: {
+    label: 'Candidate concierge',
+    amount: 9_900,
+    currency: 'USD',
+    interval: 'month',
+    includedSeats: 1,
+    maxSeats: 1,
+    summary:
+      'Human coaching from a talent partner, on top of your private profile and weekly career digest.',
+  },
+} as const;
+
+export type SubscriptionProduct = keyof typeof subscriptionPlans;
+export const subscriptionProducts = Object.keys(subscriptionPlans) as SubscriptionProduct[];
+
+/** Seats a company may fill without a subscription: one owner and two members. */
+export const freeSeatLimit = 3;
+
+/** Statuses that keep subscription benefits. past_due keeps access during payment retries. */
+export const activeSubscriptionStatuses = ['active', 'trialing', 'past_due'] as const;
+
+/**
  * Search fee terms (spec 8.3). Rates are basis points so maths stays in integers. A snapshot of
  * these terms is stored on every search when the employer accepts them, so later changes here
  * never alter an agreed search.

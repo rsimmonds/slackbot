@@ -1,4 +1,5 @@
 import 'server-only';
+import { hasActiveEmployerSubscription } from '@/lib/billing/status';
 import { currencies, defaultCurrency, markets, type Currency, type Market } from '@cmobeat/config';
 import { parseListing } from '@cmobeat/ai';
 import { audit, companies, employerMembers, listings, mandates, type Tx } from '@cmobeat/db';
@@ -245,7 +246,7 @@ export async function saveMandate(
   });
 }
 
-export const checkoutInput = z.object({ plan: z.enum(['standard', 'featured']) });
+export const checkoutInput = z.object({ plan: z.enum(['standard', 'featured', 'subscription']) });
 
 /**
  * Step 3: pay. Creates a checkout session and moves the listing to pending_payment.
@@ -254,9 +255,9 @@ export const checkoutInput = z.object({ plan: z.enum(['standard', 'featured']) }
 export async function startCheckout(
   viewer: Viewer | null,
   listingId: string,
-  plan: CheckoutPlan,
+  plan: CheckoutPlan | 'subscription',
   origin: string,
-): Promise<{ kind: 'checkout'; url: string } | { kind: 'resubmitted' }> {
+): Promise<{ kind: 'checkout'; url: string } | { kind: 'resubmitted' } | { kind: 'submitted' }> {
   requireEmployer(viewer);
   return asViewer(viewer, async (tx) => {
     const row = await getEmployerListing(tx, listingId);
@@ -275,6 +276,26 @@ export async function startCheckout(
         targetId: listingId,
       });
       return { kind: 'resubmitted' };
+    }
+
+    // Subscribers post without checkout. The database refuses this unless the subscription is active.
+    if (plan === 'subscription') {
+      if (!(await hasActiveEmployerSubscription(listing.companyId!)))
+        throw new PostingError(
+          'Unlimited posts need an active employer subscription. Subscribe on the billing page, or choose a one-off post.',
+          402,
+        );
+      await tx
+        .update(listings)
+        .set({ plan: 'subscription', featured: false, checkoutRef: null, status: 'pending_review' })
+        .where(eq(listings.id, listingId));
+      await audit(tx, {
+        actorId: viewer.id,
+        action: 'listing.submitted_subscription',
+        targetType: 'listing',
+        targetId: listingId,
+      });
+      return { kind: 'submitted' };
     }
 
     const session = await paymentsProvider().createCheckout({
