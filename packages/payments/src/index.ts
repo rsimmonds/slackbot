@@ -13,6 +13,24 @@ export {
   FAKE_CHECKOUT_PATH,
 } from './fake';
 export { StripePaymentsProvider } from './stripe';
+export {
+  FAKE_PORTAL_PATH,
+  FAKE_SUBSCRIPTION_CHECKOUT_PATH,
+  buildFakeInvoicePaymentFailed,
+  buildFakeSubscriptionDeleted,
+  buildFakeSubscriptionInvoicePaid,
+  buildFakeSubscriptionUpdated,
+  fakeCheckoutToken,
+  fakeCustomerId,
+  fakePortalToken,
+  fakePriceId,
+  newFakeSubscriptionRef,
+  signFakeToken,
+  verifyFakeToken,
+  type FakeCheckoutToken,
+  type FakePortalToken,
+  type FakeSubscriptionState,
+} from './fake-subscriptions';
 
 /**
  * PAYMENTS_PROVIDER=stripe|fake. Defaults to stripe when STRIPE_SECRET_KEY is set, else fake.
@@ -34,6 +52,10 @@ export function paymentsProvider(env: NodeJS.ProcessEnv = process.env): Payments
       prices: {
         standard: env.STRIPE_PRICE_JOB_POST_STANDARD!,
         featured: env.STRIPE_PRICE_JOB_POST_FEATURED!,
+      },
+      subscriptionPrices: {
+        employer_subscription: env.STRIPE_PRICE_EMPLOYER_SUBSCRIPTION || undefined,
+        candidate_concierge: env.STRIPE_PRICE_CANDIDATE_CONCIERGE || undefined,
       },
     });
   }

@@ -1,7 +1,10 @@
 import { Button, Iris, MeshPanel, MonoLabel, Status } from '@cmobeat/ui';
 import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
+import { DigestToggle } from '@/components/billing/DigestToggle';
 import { requireArea } from '@/lib/auth';
+import { digestEnabled } from '@/lib/billing/digest';
+import { hasActiveConcierge } from '@/lib/billing/status';
 import { myMatches } from '@/lib/matches/candidate';
 import { candidateOverview } from '@/lib/profile/profile';
 import { visibilityTerms } from '@/lib/profile/visibility';
@@ -13,7 +16,12 @@ const fmt = (d: Date) =>
 
 export default async function CandidateHome() {
   const viewer = await requireArea('candidate');
-  const [o, matchList] = await Promise.all([candidateOverview(viewer), myMatches(viewer)]);
+  const [o, matchList, digest, concierge] = await Promise.all([
+    candidateOverview(viewer),
+    myMatches(viewer),
+    digestEnabled(viewer),
+    hasActiveConcierge(viewer.id),
+  ]);
   const matchCount = matchList.length;
   const introRequests = matchList.filter((m) => m.pendingRequestId).length;
   const hidden = o.visibility === 'hidden';
@@ -184,6 +192,31 @@ export default async function CandidateHome() {
             every match before anyone is contacted.
           </EmptyState>
         )}
+      </MeshPanel>
+
+      <section id="digest" className="col-span-12 md:col-span-6" aria-label="Career digest">
+        <MeshPanel eyebrow="Career digest" title="New roles, weekly">
+          <p className="mb-4 text-small text-text-2">
+            Live roles that fit your ideal next mandate, and moves in your industries. Built inside{' '}
+            CMO Beat; nothing about you is shared.
+          </p>
+          <DigestToggle initial={digest} />
+        </MeshPanel>
+      </section>
+      <MeshPanel
+        className="col-span-12 md:col-span-6"
+        eyebrow="Concierge"
+        title={concierge ? 'Coaching is on' : 'Coaching from a person'}
+        actions={concierge ? <Status tone="human">Active</Status> : null}
+      >
+        <p className="text-small text-text-2">
+          A talent partner to prepare for board interviews, offers and your next mandate.
+        </p>
+        <div className="mt-6">
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/me/concierge">{concierge ? 'Open concierge' : 'About concierge'}</Link>
+          </Button>
+        </div>
       </MeshPanel>
     </DashboardFrame>
   );

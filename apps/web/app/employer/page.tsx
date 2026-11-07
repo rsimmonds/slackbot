@@ -4,6 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
+import { hasActiveEmployerSubscription } from '@/lib/billing/status';
 import { asViewer } from '@/lib/db';
 import { employerCompany, employerListings } from '@/lib/jobs/posting';
 import { listEmployerSearches } from '@/lib/searches/service';
@@ -17,9 +18,9 @@ export default async function EmployerHome() {
   const activeSearches = (await listEmployerSearches(viewer)).filter(
     (s) => s.status !== 'closed',
   ).length;
-  const { rows, mandateCount, confirmedCount } = await asViewer(viewer, async (tx) => {
+  const { rows, mandateCount, confirmedCount, companyId } = await asViewer(viewer, async (tx) => {
     const c = await employerCompany(tx, viewer.id);
-    if (!c) return { rows: [], mandateCount: 0, confirmedCount: 0 };
+    if (!c) return { rows: [], mandateCount: 0, confirmedCount: 0, companyId: null };
     const built = await tx
       .select({ confirmedAt: mandates.confirmedAt })
       .from(mandates)
@@ -34,8 +35,10 @@ export default async function EmployerHome() {
       rows: await employerListings(tx, c.id),
       mandateCount: built.length,
       confirmedCount: built.filter((m) => m.confirmedAt).length,
+      companyId: c.id,
     };
   });
+  const subscribed = companyId ? await hasActiveEmployerSubscription(companyId) : false;
   const live = rows.filter((r) => r.status === 'live').length;
   const inReview = rows.filter((r) => r.status === 'pending_review').length;
   return (
@@ -87,7 +90,27 @@ export default async function EmployerHome() {
           <DataCard value={String(activeSearches)} label="Active searches" />
         </Link>
       </div>
-      <MeshPanel className="col-span-12" eyebrow="Searches" title="Shortlists">
+      <MeshPanel
+        className="col-span-12 md:col-span-6"
+        eyebrow="Plan"
+        title={subscribed ? 'Subscription · unlimited posts' : 'Pay per post'}
+        actions={subscribed ? <Status tone="human">Active</Status> : null}
+      >
+        <p className="text-small text-text-2">
+          {subscribed
+            ? 'Every job post is included. Each one is still reviewed by a person before it goes live.'
+            : 'Subscribe for unlimited posts and seats for your hiring team.'}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/employer/billing">Billing and plan</Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/employer/team">Team and seats</Link>
+          </Button>
+        </div>
+      </MeshPanel>
+      <MeshPanel className="col-span-12 md:col-span-6" eyebrow="Searches" title="Shortlists">
         <EmptyState>
           Approved matches appear here anonymized. Identities are revealed only with the
           candidate&apos;s consent.

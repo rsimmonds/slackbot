@@ -5,10 +5,18 @@ import { sendEmail } from '@cmobeat/email';
 import type { PaymentEvent } from '@cmobeat/payments';
 import { and, eq, inArray } from 'drizzle-orm';
 import { paymentReceiptEmail } from '@/emails/jobs';
+import {
+  applySubscriptionDeleted,
+  applySubscriptionInvoicePaid,
+  applySubscriptionPaymentFailed,
+  applySubscriptionUpdated,
+  type SubscriptionOutcome,
+} from '@/lib/billing/subscriptions';
 import { applyInvoicePaid } from '@/lib/searches/invoices';
 import { employerContacts } from './expiry';
 
-export type PaymentOutcome = 'paid' | 'duplicate' | 'cancelled' | 'ignored' | 'mismatch';
+export type PaymentOutcome =
+  'paid' | 'duplicate' | 'cancelled' | 'ignored' | 'mismatch' | SubscriptionOutcome;
 
 const money = (minor: number, currency: string) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(minor / 100);
@@ -21,6 +29,12 @@ const money = (minor: number, currency: string) =>
 export async function applyPaymentEvent(event: PaymentEvent): Promise<PaymentOutcome> {
   const db = adminDb();
   if (event.kind === 'ignored') return 'ignored';
+  // Subscriptions (Phase 4): employer plan and candidate concierge.
+  if (event.kind === 'subscription.updated') return applySubscriptionUpdated(event);
+  if (event.kind === 'subscription.deleted') return applySubscriptionDeleted(event);
+  if (event.kind === 'invoice.payment_failed') return applySubscriptionPaymentFailed(event);
+  if (event.kind === 'invoice.paid' && event.subscriptionRef)
+    return applySubscriptionInvoicePaid(event);
   // Search and fractional fee invoices (Phase 3).
   if (event.kind === 'invoice.paid') return applyInvoicePaid(event);
 

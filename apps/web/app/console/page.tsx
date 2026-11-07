@@ -10,6 +10,7 @@ import { articleCounts } from '@/lib/editorial/articles';
 import { moveCounts } from '@/lib/editorial/moves';
 import { formatCost, openQueue, summaryByAgent } from '@/lib/agents/monitoring';
 import { proposedCount } from '@/lib/matches/review';
+import { coachingQueue } from '@/lib/billing/concierge';
 
 export const metadata = { title: 'Staff console' };
 
@@ -24,6 +25,9 @@ export default async function ConsoleHome() {
     : 0;
   const isTalent = viewer.roles.includes('talent_partner') || viewer.roles.includes('admin');
   const matchesWaiting = isTalent ? await proposedCount(viewer) : 0;
+  const coachingWaiting = isTalent
+    ? (await coachingQueue(viewer)).filter((c) => c.status === 'requested').length
+    : 0;
   const [moves, articles] = isEditor
     ? await Promise.all([moveCounts(viewer), articleCounts(viewer)])
     : [null, null];
@@ -83,6 +87,26 @@ export default async function ConsoleHome() {
           {articles?.drafts ? (
             <MonoLabel className="mt-4 block">{articles.drafts} drafts in progress</MonoLabel>
           ) : null}
+        </MeshPanel>
+      ) : null}
+      {isTalent ? (
+        <MeshPanel
+          className="col-span-12 lg:col-span-6"
+          eyebrow="Concierge"
+          title={
+            coachingWaiting
+              ? `${coachingWaiting} coaching request${coachingWaiting === 1 ? '' : 's'} waiting`
+              : 'No coaching requests waiting'
+          }
+          actions={
+            <Link href="/console/coaching" className="text-small text-text-2 hover:text-text">
+              Open queue
+            </Link>
+          }
+        >
+          <EmptyState>
+            Concierge members asking a person for help. Take one, propose a time.
+          </EmptyState>
         </MeshPanel>
       ) : null}
       {isTalent ? (

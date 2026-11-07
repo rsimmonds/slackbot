@@ -21,7 +21,7 @@ const date = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '—');
 export default async function EmployerListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ paid?: string; resubmitted?: string }>;
+  searchParams: Promise<{ paid?: string; resubmitted?: string; submitted?: string }>;
 }) {
   const viewer = await requireArea('employer');
   const sp = await searchParams;
@@ -41,12 +41,14 @@ export default async function EmployerListingsPage({
         </Button>
       }
     >
-      {sp.paid || sp.resubmitted ? (
+      {sp.paid || sp.resubmitted || sp.submitted ? (
         <div className="col-span-12">
           <Status tone="human">
             {sp.paid
               ? 'Payment received. A person will review your listing, usually within one business day.'
-              : 'Resubmitted. Our editors will review your changes.'}
+              : sp.submitted
+                ? 'Submitted under your subscription. A person will review it, usually within one business day.'
+                : 'Resubmitted. Our editors will review your changes.'}
           </Status>
         </div>
       ) : null}

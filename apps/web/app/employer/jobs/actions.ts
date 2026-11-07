@@ -79,5 +79,11 @@ export async function checkoutAction(
     throw e;
   }
   revalidatePath('/employer/jobs');
-  redirect(result.kind === 'checkout' ? result.url : `/employer/jobs?resubmitted=${listingId}`);
+  redirect(
+    result.kind === 'checkout'
+      ? result.url
+      : result.kind === 'submitted'
+        ? `/employer/jobs?submitted=${listingId}`
+        : `/employer/jobs?resubmitted=${listingId}`,
+  );
 }

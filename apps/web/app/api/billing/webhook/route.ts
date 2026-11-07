@@ -22,5 +22,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Malformed event' }, { status: 400 });
   }
   const outcome = await applyPaymentEvent(event);
+  // The subscription for an invoice may not have arrived yet: ask the provider to retry later.
+  if (outcome === 'retry') return NextResponse.json({ received: false, outcome }, { status: 409 });
   return NextResponse.json({ received: true, outcome });
 }

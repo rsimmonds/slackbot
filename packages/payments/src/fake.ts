@@ -2,6 +2,13 @@ import { createHash, randomBytes } from 'node:crypto';
 import { catalogue } from '@cmobeat/config';
 import { z } from 'zod';
 import { FAKE_SIGNATURE_HEADER, signPayload, verifySignature } from './signing';
+import {
+  FAKE_PORTAL_PATH,
+  FAKE_SUBSCRIPTION_CHECKOUT_PATH,
+  isCurrency,
+  parseFakeSubscriptionEvent,
+  signFakeToken,
+} from './fake-subscriptions';
 import type {
   CheckoutPlan,
   CheckoutRequest,
@@ -10,6 +17,8 @@ import type {
   IssuedInvoice,
   PaymentEvent,
   PaymentsProvider,
+  PortalRequest,
+  SubscriptionCheckoutRequest,
 } from './types';
 
 /**
@@ -47,6 +56,8 @@ const fakeInvoiceEvent = z.object({
   data: z.object({
     ref: z.string().startsWith('fake_in_'),
     amountPaid: z.number().int().nonnegative(),
+    subscriptionRef: z.string().startsWith('fake_sub_').nullish(),
+    currency: z.string().nullish(),
   }),
 });
 
@@ -104,9 +115,57 @@ export class FakePaymentsProvider implements PaymentsProvider {
     return { ref, url: `${origin}${FAKE_INVOICE_PATH}/${ref}`, totalMinor };
   }
 
+  async createSubscriptionCheckout(req: SubscriptionCheckoutRequest): Promise<CheckoutSession> {
+    if (
+      (req.product === 'employer_subscription') !== !!req.companyId ||
+      (!req.companyId && !req.userId)
+    )
+      throw new Error('Employer subscriptions need a company; concierge needs a user');
+    const ref = `fake_cs_sub_${randomBytes(16).toString('hex')}`;
+    const token = signFakeToken(
+      {
+        kind: 'subscription_checkout',
+        ref,
+        product: req.product,
+        companyId: req.companyId ?? null,
+        userId: req.companyId ? null : (req.userId ?? null),
+        seats: req.seats,
+        successUrl: req.successUrl,
+        cancelUrl: req.cancelUrl,
+      },
+      this.secret,
+    );
+    const origin = new URL(req.successUrl).origin;
+    return {
+      ref,
+      url: `${origin}${FAKE_SUBSCRIPTION_CHECKOUT_PATH}?t=${encodeURIComponent(token)}`,
+    };
+  }
+
+  async createPortalSession(req: PortalRequest): Promise<{ url: string }> {
+    const token = signFakeToken(
+      {
+        kind: 'portal',
+        subscriptionRef: req.subscriptionRef,
+        customerId: req.customerId,
+        returnUrl: req.returnUrl,
+      },
+      this.secret,
+    );
+    const origin = new URL(req.returnUrl).origin;
+    return { url: `${origin}${FAKE_PORTAL_PATH}?t=${encodeURIComponent(token)}` };
+  }
+
+  /** The fake provider changes subscriptions only through its TEST portal page. */
+  async setCancelAtPeriodEnd(): Promise<boolean> {
+    return false;
+  }
+
   async parseWebhook(rawBody: string, headers: Headers): Promise<PaymentEvent> {
     verifySignature(rawBody, headers.get(FAKE_SIGNATURE_HEADER), this.secret);
     const json = JSON.parse(rawBody) as { type?: string };
+    const sub = parseFakeSubscriptionEvent(json);
+    if (sub) return sub;
     if (json.type === 'invoice.paid') {
       const event = fakeInvoiceEvent.parse(json);
       return {
@@ -114,6 +173,8 @@ export class FakePaymentsProvider implements PaymentsProvider {
         eventId: event.id,
         ref: event.data.ref,
         amountPaid: event.data.amountPaid,
+        subscriptionRef: event.data.subscriptionRef ?? null,
+        currency: isCurrency(event.data.currency) ? event.data.currency : null,
         provider: 'fake',
       };
     }

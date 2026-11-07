@@ -1,4 +1,5 @@
 import 'server-only';
+import { hasActiveEmployerSubscription } from '@/lib/billing/status';
 import { audit, companies, listings, mandates, type Tx } from '@cmobeat/db';
 import { sendEmail } from '@cmobeat/email';
 import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
@@ -107,6 +108,14 @@ export async function decideListing(
       throw new PostingError('This listing is not awaiting review.', 409);
     if (input.decision === 'approve' && !row.paidAt && row.plan !== 'subscription') {
       throw new PostingError('This listing has not been paid for.', 409);
+    }
+    if (
+      input.decision === 'approve' &&
+      !row.paidAt &&
+      row.plan === 'subscription' &&
+      !(await hasActiveEmployerSubscription(row.companyId!))
+    ) {
+      throw new PostingError('This company’s subscription is no longer active.', 409);
     }
     const base = { moderatedBy: viewer.id, moderatedAt: now };
     if (input.decision === 'approve') {

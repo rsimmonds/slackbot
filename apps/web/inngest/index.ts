@@ -1,4 +1,5 @@
 import type { InngestFunction } from 'inngest';
+import { careerDigestWeekly } from './billing';
 import { dataDeletions, dataExports, profileRetention } from './data-rights';
 import { listingExpiry, savedSearchAlerts } from './jobs';
 import {
@@ -28,4 +29,6 @@ export const functions: InngestFunction.Any[] = [
   matchOnProfileVisible,
   matchNightly,
   fairnessWeekly,
+  // Career digest (subscriptions workstream)
+  careerDigestWeekly,
 ];
