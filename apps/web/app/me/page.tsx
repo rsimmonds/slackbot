@@ -2,6 +2,7 @@ import { Button, Iris, MeshPanel, MonoLabel, Status } from '@cmobeat/ui';
 import Link from 'next/link';
 import { DashboardFrame, EmptyState } from '@/components/Dashboard';
 import { requireArea } from '@/lib/auth';
+import { myMatches } from '@/lib/matches/candidate';
 import { candidateOverview } from '@/lib/profile/profile';
 import { visibilityTerms } from '@/lib/profile/visibility';
 
@@ -12,7 +13,9 @@ const fmt = (d: Date) =>
 
 export default async function CandidateHome() {
   const viewer = await requireArea('candidate');
-  const o = await candidateOverview(viewer);
+  const [o, matchList] = await Promise.all([candidateOverview(viewer), myMatches(viewer)]);
+  const matchCount = matchList.length;
+  const introRequests = matchList.filter((m) => m.pendingRequestId).length;
   const hidden = o.visibility === 'hidden';
   const sessionToReview =
     o.lastSession && o.lastSession.status === 'complete' && !o.lastSession.profileId
@@ -155,11 +158,32 @@ export default async function CandidateHome() {
         </div>
       </MeshPanel>
 
-      <MeshPanel className="col-span-12" eyebrow="Matches" title="Nothing yet">
-        <EmptyState>
-          When there are matches, they appear here anonymized, with the reasons. A human reviews
-          every match before anyone is contacted.
-        </EmptyState>
+      <MeshPanel
+        className="col-span-12"
+        eyebrow="Matches"
+        title={
+          matchCount
+            ? `${matchCount} match${matchCount === 1 ? '' : 'es'} approved by a person`
+            : 'Nothing yet'
+        }
+        actions={
+          introRequests ? (
+            <Status tone="human">
+              {introRequests} introduction request{introRequests === 1 ? '' : 's'}
+            </Status>
+          ) : null
+        }
+      >
+        {matchCount ? (
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/me/matches">See your matches</Link>
+          </Button>
+        ) : (
+          <EmptyState>
+            When there are matches, they appear here anonymized, with the reasons. A human reviews
+            every match before anyone is contacted.
+          </EmptyState>
+        )}
       </MeshPanel>
     </DashboardFrame>
   );

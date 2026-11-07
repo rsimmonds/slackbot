@@ -141,11 +141,18 @@ export default async function MandatePage({
           ) : (
             <Status tone="machine">Drafted from your session · not confirmed</Status>
           )}
-          <Button asChild variant="secondary" size="sm">
-            <a href={`/api/mandates/${m.id}/pdf`} download>
-              Export PDF
-            </a>
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {m.confirmedAt ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link href={`/employer/mandates/${m.id}/shortlist`}>Shortlist</Link>
+              </Button>
+            ) : null}
+            <Button asChild variant="secondary" size="sm">
+              <a href={`/api/mandates/${m.id}/pdf`} download>
+                Export PDF
+              </a>
+            </Button>
+          </div>
         </div>
       }
     >
