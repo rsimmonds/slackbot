@@ -46,6 +46,7 @@ export const listingStatusEnum = pgEnum('listing_status', [
   'pending_review',
   'live',
   'expired',
+  'rejected',
 ]);
 export const listingPlanEnum = pgEnum('listing_plan', ['standard', 'featured', 'subscription']);
 export const consentKindEnum = pgEnum('consent_kind', ['apply', 'reveal', 'share']);
@@ -271,6 +272,9 @@ export const mandates = pgTable(
     remote: boolean('remote').notNull().default(false),
     market: marketEnum('market').notNull(),
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+    /** What the employer pasted, and where it came from, for the Listing Parser. */
+    rawSource: text('raw_source'),
+    sourceUrl: text('source_url'),
     ...isSample(),
     ...timestamps(),
     ...softDelete(),
@@ -302,6 +306,12 @@ export const listings = pgTable(
     featured: boolean('featured').notNull().default(false),
     publishedAt: timestamp('published_at', { withTimezone: true }),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
+    /** Checkout session reference (Stripe or the local fake). */
+    checkoutRef: text('checkout_ref').unique(),
+    paidAt: timestamp('paid_at', { withTimezone: true }),
+    moderatedBy: uuid('moderated_by').references(() => users.id),
+    moderatedAt: timestamp('moderated_at', { withTimezone: true }),
+    moderationNote: text('moderation_note'),
     ...isSample(),
     ...timestamps(),
     ...softDelete(),
@@ -323,7 +333,9 @@ export const savedSearches = pgTable('saved_searches', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   query: jsonb('query').$type<Record<string, unknown>>().notNull(),
+  name: text('name'),
   alertFrequency: text('alert_frequency').notNull().default('weekly'),
+  lastAlertedAt: timestamp('last_alerted_at', { withTimezone: true }),
   ...timestamps(),
 });
 
@@ -511,6 +523,11 @@ export const moves = pgTable(
     status: moveStatusEnum('status').notNull().default('draft'),
     approvedBy: uuid('approved_by').references(() => users.id),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
+    /** One-paragraph summary shown on the move page. */
+    summary: text('summary'),
+    previousRole: text('previous_role'),
+    agentRunId: uuid('agent_run_id').references(() => agentRuns.id),
+    reviewNote: text('review_note'),
     ...isSample(),
     ...timestamps(),
   },
@@ -541,6 +558,10 @@ export const articles = pgTable(
     editorId: uuid('editor_id').references(() => users.id),
     status: articleStatusEnum('status').notNull().default('draft'),
     publishedAt: timestamp('published_at', { withTimezone: true }),
+    reviewNote: text('review_note'),
+    agentRunId: uuid('agent_run_id').references(() => agentRuns.id),
+    /** Pull quotes and key takeaways, editor-curated. */
+    takeaways: jsonb('takeaways').$type<string[]>().notNull().default([]),
     ...isSample(),
     ...timestamps(),
     ...softDelete(),
@@ -563,8 +584,21 @@ export const subscribers = pgTable('subscribers', {
     .default(sql`'{}'`),
   source: text('source'),
   status: subscriberStatusEnum('status').notNull().default('pending'),
-  confirmToken: text('confirm_token'),
+  confirmToken: text('confirm_token').unique(),
+  confirmTokenExpiresAt: timestamp('confirm_token_expires_at', { withTimezone: true }),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+  /** Long-lived token for one-click unsubscribe and the preference centre. */
+  manageToken: text('manage_token').unique(),
+  market: marketEnum('market'),
+  /** { frequency: 'weekly' | 'monthly', topics: string[] } */
+  preferences: jsonb('preferences')
+    .$type<{ frequency: 'weekly' | 'monthly'; topics: string[] }>()
+    .notNull()
+    .default({ frequency: 'weekly', topics: [] }),
   consentAt: timestamp('consent_at', { withTimezone: true }),
+  /** Exact consent wording shown at signup (CASL record-keeping). */
+  consentText: text('consent_text'),
+  unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
   ...timestamps(),
 });
 
@@ -666,4 +700,56 @@ export const auditLog = pgTable(
     index('audit_log_target_idx').on(t.targetType, t.targetId),
     index('audit_log_actor_idx').on(t.actorId, t.at),
   ],
+);
+
+// ---------------------------------------------------------------- Phase 1
+
+export const emailStatusEnum = pgEnum('email_status', ['queued', 'sent', 'failed']);
+
+/** Every outbound email. The local provider only writes here; Resend also records its id. */
+export const emailOutbox = pgTable(
+  'email_outbox',
+  {
+    id: id(),
+    toEmail: text('to_email').notNull(),
+    subject: text('subject').notNull(),
+    template: text('template').notNull(),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+    provider: text('provider').notNull(),
+    providerRef: text('provider_ref'),
+    status: emailStatusEnum('status').notNull().default('queued'),
+    error: text('error'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    ...timestamps(),
+  },
+  (t) => [index('email_outbox_to_idx').on(t.toEmail, t.createdAt)],
+);
+
+export const sourceKindEnum = pgEnum('source_kind', ['newsroom', 'wire', 'edgar', 'submission']);
+export const sourceItemStatusEnum = pgEnum('source_item_status', [
+  'new',
+  'irrelevant',
+  'drafted',
+  'failed',
+]);
+
+/** Public items the Moves Tracker has seen. Deduped by URL; never re-drafted. */
+export const sourceItems = pgTable(
+  'source_items',
+  {
+    id: id(),
+    kind: sourceKindEnum('kind').notNull(),
+    url: text('url').notNull().unique(),
+    title: text('title').notNull(),
+    publisher: text('publisher'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    contentHash: text('content_hash').notNull(),
+    excerpt: text('excerpt'),
+    status: sourceItemStatusEnum('status').notNull().default('new'),
+    classification: jsonb('classification').$type<Record<string, unknown>>(),
+    moveId: uuid('move_id').references(() => moves.id),
+    submittedBy: uuid('submitted_by').references(() => users.id),
+    ...timestamps(),
+  },
+  (t) => [index('source_items_status_idx').on(t.status, t.createdAt)],
 );

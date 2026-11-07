@@ -14,10 +14,13 @@
   },
   "dependencies": {
     "@clerk/nextjs": "7.9.25",
+    "@cmobeat/ai": "workspace:*",
     "@cmobeat/config": "workspace:*",
     "@cmobeat/db": "workspace:*",
+    "@cmobeat/email": "workspace:*",
     "@cmobeat/ui": "workspace:*",
     "drizzle-orm": "0.45.4",
+    "inngest": "4.26.2",
     "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",
