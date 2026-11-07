@@ -1,6 +1,7 @@
 import { brand, currencies, type CompBasis, type Currency } from '@cmobeat/config';
 import { DataCard, MeshPanel, MonoLabel } from '@cmobeat/ui';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import {
   ChartFigure,
   DataTable,
@@ -11,7 +12,8 @@ import {
 import { PageHeader, PublicPage } from '@/components/publication/PageHeader';
 import { getViewer } from '@/lib/auth';
 import { asViewer } from '@/lib/db';
-import { levelLabel, type Level } from '@/lib/publication/labels';
+import { publicIndustries, publicMarkets } from '@/lib/publication/aggregates';
+import { levelLabel, marketLabel, type Level } from '@/lib/publication/labels';
 import {
   compBands,
   movesByIndustry,
@@ -69,8 +71,8 @@ function facets(bands: CompBand[]) {
 
 export default async function DataPage() {
   const viewer = await getViewer();
-  const [industries, bands, last90] = await asViewer(viewer, (tx) =>
-    Promise.all([movesByIndustry(tx), compBands(tx), movesLastDays(tx, 90)]),
+  const [industries, bands, last90, industryPages] = await asViewer(viewer, (tx) =>
+    Promise.all([movesByIndustry(tx), compBands(tx), movesLastDays(tx, 90), publicIndustries(tx)]),
   );
   const totalMoves = industries.reduce((s, r) => s + r.n, 0);
   const listingsWithComp = bands.reduce((s, b) => s + b.n, 0);
@@ -222,12 +224,66 @@ export default async function DataPage() {
         </div>
       </section>
 
+      <section aria-labelledby="explore" className="mt-16 grid grid-cols-12 gap-8">
+        <div className="col-span-12 flex flex-col gap-3 lg:col-span-4">
+          <MonoLabel>Explore</MonoLabel>
+          <h2 id="explore" className="font-serif text-h2 text-text">
+            By industry and market.
+          </h2>
+          <p className="text-small text-text-2">
+            Each page has quotable figures, a citation and a CSV of the aggregates.
+          </p>
+        </div>
+        <div className="col-span-12 grid gap-8 sm:grid-cols-2 lg:col-span-8">
+          <nav aria-label="Data by market" className="flex flex-col gap-2">
+            <MonoLabel>Markets</MonoLabel>
+            <ul className="flex flex-col divide-y divide-line border-y border-line">
+              {publicMarkets.map((m) => (
+                <li key={m}>
+                  <Link
+                    href={`/data/markets/${m.toLowerCase()}`}
+                    className="flex justify-between py-2 text-small text-text-2 hover:text-text"
+                  >
+                    {marketLabel[m]}
+                    <span aria-hidden>→</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <nav aria-label="Data by industry" className="flex flex-col gap-2">
+            <MonoLabel>Industries</MonoLabel>
+            <ul className="flex flex-col divide-y divide-line border-y border-line">
+              {industryPages.map((i) => (
+                <li key={i.slug}>
+                  <Link
+                    href={`/data/industries/${i.slug}`}
+                    className="flex justify-between py-2 text-small text-text-2 hover:text-text"
+                  >
+                    {i.industry}
+                    <span aria-hidden>→</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </section>
+
       <section aria-labelledby="report" className="mt-16 grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-8 lg:col-start-5">
           <MeshPanel eyebrow="Annual report" title={brand.annualReport}>
             <p id="report" className="text-small text-text-2">
-              The full report, with methodology and downloadable data, is in preparation.
-              Subscribers to {brand.newsletterName} hear first.
+              The year in one document: moves by type, industry and market, what the seat pays, and
+              how every number was made.
+            </p>
+            <p className="mt-4">
+              <Link
+                href="/data/report"
+                className="text-small text-text underline underline-offset-4"
+              >
+                Get the report (free PDF)
+              </Link>
             </p>
           </MeshPanel>
           <p className="mt-6 text-micro text-text-3">

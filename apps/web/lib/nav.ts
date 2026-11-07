@@ -36,6 +36,7 @@ export const staffNav: NavLink[] = [
   { href: '/console/agents', label: 'Agents' },
   { href: '/console/fairness', label: 'Fairness' },
   { href: '/console/sponsorships', label: 'Sponsorships' },
+  { href: '/console/leads', label: 'Leads' },
 ];
 
 export const readerNav: NavLink[] = [

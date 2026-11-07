@@ -922,6 +922,13 @@ export const reportDownloads = pgTable(
     id: id(),
     reportSlug: text('report_slug').notNull(),
     subscriberId: uuid('subscriber_id').references(() => subscribers.id, { onDelete: 'set null' }),
+    /**
+     * The address the report was sent to. Kept for the report delivery and lead record only: it is
+     * NOT a newsletter subscription. Marketing email needs the separate, unticked opt-in below,
+     * which goes through double opt-in in `subscribers`.
+     */
+    email: text('email'),
+    newsletterOptIn: boolean('newsletter_opt_in').notNull().default(false),
     company: text('company'),
     role: text('role'),
     market: marketEnum('market'),
