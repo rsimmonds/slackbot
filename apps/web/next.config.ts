@@ -33,7 +33,13 @@ const securityHeaders = [
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ['@cmobeat/ui', '@cmobeat/db', '@cmobeat/config'],
+  transpilePackages: [
+    '@cmobeat/ui',
+    '@cmobeat/db',
+    '@cmobeat/config',
+    '@cmobeat/ai',
+    '@cmobeat/email',
+  ],
   serverExternalPackages: ['postgres'],
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
